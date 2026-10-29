@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { WeatherForecastResult } from '../types';
 import { CropTools } from '../lib/cropTools';
-import { CloudRain, CloudSun, AlertTriangle, RefreshCw, MapPin } from 'lucide-react';
+import { CloudRain, AlertTriangle, RefreshCw, MapPin, CheckCircle2 } from 'lucide-react';
 
 interface WeatherWidgetProps {
   cropTools: CropTools;
@@ -43,18 +43,18 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   const isRainImminent = max48hProb >= 60;
 
   return (
-    <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-5 shadow-xl space-y-4">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-            <CloudRain className="w-5 h-5" />
+    <div className="bg-white rounded-2xl border border-[#E8E2D9] p-6 sm:p-7 shadow-xs space-y-5 transition-all">
+      <div className="flex items-center justify-between pb-4 border-b border-[#F0ECE4]">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#E8F5E9] border border-[#C8E6C9] flex items-center justify-center text-[#2D6A4F]">
+            <CloudRain className="w-5 h-5 stroke-[2.2]" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+            <h3 className="text-sm font-bold text-[#1A2421]">
               Open-Meteo Weather Radar
             </h3>
-            <p className="text-xs text-slate-400 flex items-center gap-1 truncate max-w-[200px]" title={locationName}>
-              <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+            <p className="text-xs text-[#6D4C41] flex items-center gap-1 font-medium truncate max-w-[210px]" title={locationName}>
+              <MapPin className="w-3.5 h-3.5 text-[#2D6A4F] shrink-0" />
               <span>{locationName}</span>
             </p>
           </div>
@@ -63,66 +63,74 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
         <button
           onClick={fetchWeather}
           disabled={loading}
-          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-400 hover:text-white transition cursor-pointer"
+          className="p-2 rounded-xl bg-[#FAF8F5] hover:bg-[#F5EBE6] text-[#6D4C41] border border-[#E8E2D9] transition cursor-pointer"
           title="Refresh live weather forecast"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      {isRainImminent && (
-        <div className="bg-amber-500/15 border border-amber-500/40 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-200">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold">Weather Alert:</span> High rain probability ({max48hProb}%) within 48h. AgriAgent rule automatically advises withholding irrigation and chemical fertilizer to prevent wash-off.
+      {/* 48-Hour Rain Risk Alert Banner */}
+      <div
+        className={`p-4 rounded-xl border flex items-start gap-3 ${
+          isRainImminent
+            ? 'bg-[#FFF3E0] border-[#FFE0B2] text-[#BF360C]'
+            : 'bg-[#E8F5E9] border-[#C8E6C9] text-[#1B5E20]'
+        }`}
+      >
+        {isRainImminent ? (
+          <AlertTriangle className="w-5 h-5 text-[#E65100] shrink-0 mt-0.5" />
+        ) : (
+          <CheckCircle2 className="w-5 h-5 text-[#2D6A4F] shrink-0 mt-0.5" />
+        )}
+        <div className="text-xs space-y-1">
+          <div className="font-bold">
+            {isRainImminent
+              ? `High Rain Risk: ${max48hProb}% in next 48h`
+              : `Low Rain Risk: ${max48hProb}% in next 48h`}
           </div>
+          <p className="opacity-90 leading-relaxed">
+            {isRainImminent
+              ? 'Postpone fertilizer application and withhold surface irrigation to prevent nutrient leaching.'
+              : 'Safe for scheduled irrigation and routine fertigation according to soil moisture needs.'}
+          </p>
         </div>
-      )}
+      </div>
 
-      {forecast?.error ? (
-        <div className="text-xs text-slate-400 p-3 bg-slate-950/60 rounded-xl border border-slate-800">
-          {forecast.error}
-        </div>
-      ) : forecast ? (
-        <div className="grid grid-cols-3 gap-2 text-center">
-          {forecast.days_ahead.map((day, idx) => {
-            const prob = forecast.rain_probability_pct[idx] ?? 0;
-            const mm = forecast.rain_mm[idx] ?? 0;
-            const isHigh = prob >= 60;
+      {/* 3-Day Forecast Grid */}
+      <div className="space-y-2">
+        <span className="text-[11px] font-bold tracking-wider text-[#6D4C41] uppercase">
+          3-Day Precipitation Outlook
+        </span>
+        <div className="grid grid-cols-3 gap-2.5">
+          {[0, 1, 2].map((idx) => {
+            const prob = forecast?.rain_probability_pct?.[idx] ?? 0;
+            const mm = forecast?.rain_mm?.[idx] ?? 0;
+            const days = ['Today', 'Tomorrow', 'Day +2'];
+
             return (
               <div
-                key={day}
-                className={`p-3 rounded-xl border transition ${
-                  isHigh
-                    ? 'bg-cyan-950/40 border-cyan-700/60'
-                    : 'bg-slate-950/50 border-slate-800/80'
-                }`}
+                key={idx}
+                className="bg-[#FAF8F5] border border-[#E8E2D9] rounded-xl p-3 text-center space-y-1"
               >
-                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Day +{day}
+                <div className="text-[11px] font-medium text-[#60584F]">
+                  {days[idx]}
                 </div>
-                <div className="my-2 flex justify-center">
-                  {prob >= 40 ? (
-                    <CloudRain className="w-6 h-6 text-cyan-400" />
-                  ) : (
-                    <CloudSun className="w-6 h-6 text-amber-400" />
-                  )}
+                <div className="text-base font-extrabold text-[#1A2421]">
+                  {mm.toFixed(1)} <span className="text-[11px] font-normal text-[#60584F]">mm</span>
                 </div>
-                <div className={`text-base font-extrabold ${isHigh ? 'text-cyan-300' : 'text-slate-200'}`}>
-                  {prob}%
-                </div>
-                <div className="text-[11px] font-mono text-slate-400">
-                  {mm} mm rain
+                <div
+                  className={`text-[11px] font-bold ${
+                    prob >= 60 ? 'text-[#BF360C]' : 'text-[#2D6A4F]'
+                  }`}
+                >
+                  {prob}% rain
                 </div>
               </div>
             );
           })}
         </div>
-      ) : (
-        <div className="text-xs text-slate-500 text-center py-4">
-          Loading 3-day meteorological forecast...
-        </div>
-      )}
+      </div>
     </div>
   );
 };

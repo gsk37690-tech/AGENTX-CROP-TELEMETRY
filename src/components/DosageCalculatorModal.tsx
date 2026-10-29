@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CropTools, MAX_NUTRIENT_KG_PER_ACRE, MAX_WATER_MM, ROOT_ZONE_MM } from '../lib/cropTools';
 import { DosageResult } from '../types';
-import { X, Calculator, ShieldAlert, CheckCircle2, Droplets, Sparkles, Scale, Info } from 'lucide-react';
+import { X, Calculator, ShieldAlert, CheckCircle2, Droplets, Scale, Info } from 'lucide-react';
 
 interface DosageCalculatorModalProps {
   isOpen: boolean;
@@ -35,37 +35,37 @@ export const DosageCalculatorModal: React.FC<DosageCalculatorModalProps> = ({
   const availableStages = stagesByCrop[crop] || ['seedling', 'vegetative', 'flowering', 'fruiting'];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white border border-[#E8E2D9] rounded-2xl w-full max-w-3xl shadow-xl overflow-hidden my-8">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-slate-950/50">
+        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-[#F0ECE4] bg-white">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <Calculator className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-[#E8F5E9] border border-[#C8E6C9] flex items-center justify-center text-[#2D6A4F]">
+              <Calculator className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">
+              <h3 className="text-base font-bold text-[#1A2421]">
                 Agronomic Dosage & Irrigation Calculator
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#60584F]">
                 Formula: Deficit / 2.471 * Acres with TNAU/ICAR safety guardrails
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-2 rounded-xl text-[#8D6E63] hover:text-[#1A2421] hover:bg-[#FAF8F5] transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Content */}
-        <div className="p-5 space-y-6">
+        <div className="p-6 space-y-6">
           {/* Input Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#FAF8F5] p-5 rounded-2xl border border-[#E8E2D9]">
             <div>
-              <label htmlFor="modal-crop-select" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              <label htmlFor="modal-crop-select" className="block text-xs font-bold text-[#6D4C41] uppercase tracking-wider mb-1.5">
                 Target Crop
               </label>
               <select
@@ -75,7 +75,7 @@ export const DosageCalculatorModal: React.FC<DosageCalculatorModalProps> = ({
                   setCrop(e.target.value);
                   setStage(stagesByCrop[e.target.value]?.[0] || 'flowering');
                 }}
-                className="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                className="w-full bg-white border border-[#D7CCC8] text-[#1A2421] text-sm font-medium rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#2D6A4F]/20 focus:border-[#2D6A4F] cursor-pointer"
               >
                 <option value="tomato">Tomato (Solanum lycopersicum)</option>
                 <option value="rice">Rice / Paddy (Oryza sativa)</option>
@@ -87,14 +87,14 @@ export const DosageCalculatorModal: React.FC<DosageCalculatorModalProps> = ({
             </div>
 
             <div>
-              <label htmlFor="modal-stage-select" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              <label htmlFor="modal-stage-select" className="block text-xs font-bold text-[#6D4C41] uppercase tracking-wider mb-1.5">
                 Growth Stage
               </label>
               <select
                 id="modal-stage-select"
                 value={stage}
                 onChange={(e) => setStage(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500 cursor-pointer capitalize"
+                className="w-full bg-white border border-[#D7CCC8] text-[#1A2421] text-sm font-medium rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#2D6A4F]/20 focus:border-[#2D6A4F] cursor-pointer capitalize"
               >
                 {availableStages.map((s) => (
                   <option key={s} value={s}>
@@ -105,8 +105,8 @@ export const DosageCalculatorModal: React.FC<DosageCalculatorModalProps> = ({
             </div>
 
             <div>
-              <label htmlFor="modal-acres-input" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Field Area (Acres): <span className="text-emerald-400 font-bold">{acres}</span>
+              <label htmlFor="modal-acres-input" className="block text-xs font-bold text-[#6D4C41] uppercase tracking-wider mb-1.5">
+                Field Area (Acres): <span className="text-[#2D6A4F] font-bold">{acres}</span>
               </label>
               <input
                 id="modal-acres-input"
@@ -116,63 +116,63 @@ export const DosageCalculatorModal: React.FC<DosageCalculatorModalProps> = ({
                 step="0.5"
                 value={acres}
                 onChange={(e) => setAcres(Math.max(0.1, parseFloat(e.target.value) || 1))}
-                className="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500"
+                className="w-full bg-white border border-[#D7CCC8] text-[#1A2421] text-sm font-medium rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-[#2D6A4F]/20 focus:border-[#2D6A4F]"
               />
             </div>
           </div>
 
           {/* Results Display */}
           {dosageData.error ? (
-            <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 flex items-center gap-3 text-rose-300 text-sm">
-              <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
+            <div className="bg-[#FFEBEE] border border-[#FFCDD2] rounded-2xl p-4 flex items-center gap-3 text-[#B71C1C] text-sm">
+              <ShieldAlert className="w-5 h-5 text-[#C62828] shrink-0" />
               <span>{dosageData.error}</span>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Nutrients Table */}
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
-                  <Scale className="w-4 h-4 text-emerald-400" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#6D4C41] mb-2.5 flex items-center gap-1.5">
+                  <Scale className="w-4 h-4 text-[#2D6A4F]" />
                   Fertilizer Nutrient Deficit & Capped Dose
                 </h4>
-                <div className="overflow-x-auto rounded-xl border border-slate-800">
+                <div className="overflow-x-auto rounded-xl border border-[#E8E2D9]">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800">
+                    <thead className="bg-[#FAF8F5] text-[#6D4C41] font-semibold border-b border-[#E8E2D9]">
                       <tr>
-                        <th className="p-3">Nutrient</th>
-                        <th className="p-3">Current Soil Level</th>
-                        <th className="p-3">Ideal Level</th>
-                        <th className="p-3">Deficit (kg/ha)</th>
-                        <th className="p-3">Calculated Dose ({acres} acre)</th>
-                        <th className="p-3">Status</th>
+                        <th className="p-3.5">Nutrient</th>
+                        <th className="p-3.5">Current Soil Level</th>
+                        <th className="p-3.5">Ideal Level</th>
+                        <th className="p-3.5">Deficit (kg/ha)</th>
+                        <th className="p-3.5">Calculated Dose ({acres} acre)</th>
+                        <th className="p-3.5">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800 text-slate-300">
+                    <tbody className="divide-y divide-[#F0ECE4] text-[#262E2B]">
                       {['N', 'P', 'K'].map((nut) => {
                         const item = (dosageData.dosage as any)?.[nut];
                         if (!item) return null;
                         const isCapped = item.dose_kg === MAX_NUTRIENT_KG_PER_ACRE * acres;
                         return (
-                          <tr key={nut} className="hover:bg-slate-800/40">
-                            <td className="p-3 font-bold text-white flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          <tr key={nut} className="hover:bg-[#FAF8F5]">
+                            <td className="p-3.5 font-bold text-[#1A2421] flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-[#2D6A4F]"></span>
                               {nut === 'N' ? 'Nitrogen (N)' : nut === 'P' ? 'Phosphorus (P)' : 'Potassium (K)'}
                             </td>
-                            <td className="p-3 font-mono">{item.current} kg/ha</td>
-                            <td className="p-3 font-mono text-cyan-300">{item.ideal} kg/ha</td>
-                            <td className="p-3 font-mono text-amber-300">
+                            <td className="p-3.5 font-mono">{item.current} kg/ha</td>
+                            <td className="p-3.5 font-mono text-[#2D6A4F]">{item.ideal} kg/ha</td>
+                            <td className="p-3.5 font-mono text-[#D97706]">
                               {item.deficit > 0 ? `+${item.deficit}` : '0 (Met)'}
                             </td>
-                            <td className="p-3 font-mono font-bold text-emerald-400 text-sm">
+                            <td className="p-3.5 font-mono font-bold text-[#2D6A4F] text-sm">
                               {item.dose_kg} kg
                             </td>
-                            <td className="p-3">
+                            <td className="p-3.5">
                               {isCapped ? (
-                                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-semibold">
+                                <span className="text-[11px] bg-[#FFF3E0] text-[#BF360C] px-2 py-0.5 rounded-full font-semibold">
                                   Safety Capped
                                 </span>
                               ) : (
-                                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-semibold">
+                                <span className="text-[11px] bg-[#E8F5E9] text-[#1B5E20] px-2 py-0.5 rounded-full font-semibold">
                                   Within Limits
                                 </span>
                               )}
@@ -185,65 +185,43 @@ export const DosageCalculatorModal: React.FC<DosageCalculatorModalProps> = ({
                 </div>
               </div>
 
-              {/* Water Requirement Card */}
+              {/* Water Requirement Box */}
               {dosageData.dosage?.water && (
-                <div className="bg-cyan-950/30 border border-cyan-800/40 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 mt-0.5">
-                      <Droplets className="w-5 h-5" />
+                <div className="bg-[#FAF8F5] border border-[#E8E2D9] rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#E8F5E9] text-[#2D6A4F] flex items-center justify-center">
+                      <Droplets className="w-5 h-5 stroke-[2.2]" />
                     </div>
                     <div>
-                      <h5 className="text-sm font-bold text-white">
-                        Irrigation Requirement (Root Zone: {ROOT_ZONE_MM} mm)
-                      </h5>
-                      <p className="text-xs text-slate-300 mt-0.5">
-                        Current Moisture: <span className="font-semibold text-cyan-300">{dosageData.dosage.water.current_pct}%</span> | Target: <span className="font-semibold text-cyan-300">{dosageData.dosage.water.ideal_pct}%</span>
-                      </p>
+                      <div className="text-sm font-bold text-[#1A2421]">
+                        Hydrological Irrigation Need
+                      </div>
+                      <div className="text-xs text-[#60584F]">
+                        Root depth: {ROOT_ZONE_MM} mm | Capped at {MAX_WATER_MM} mm per single cycle
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right sm:border-l sm:border-cyan-800/50 sm:pl-4">
-                    <div className="text-lg font-extrabold text-cyan-300">
+                  <div className="text-right">
+                    <div className="text-xl font-extrabold text-[#2D6A4F]">
                       {dosageData.dosage.water.irrigation_mm} mm
                     </div>
-                    <div className="text-xs font-mono text-slate-400">
-                      {dosageData.dosage.water.litres.toLocaleString()} Litres ({acres} acre)
+                    <div className="text-xs font-semibold text-[#6D4C41]">
+                      {dosageData.dosage.water.litres?.toLocaleString()} Litres ({acres} acre)
                     </div>
                   </div>
                 </div>
               )}
-
-              {/* Notes & Guardrails */}
-              {dosageData.notes.length > 0 && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-200 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5">
-                    <ShieldAlert className="w-4 h-4 text-amber-400" /> Agronomic Safety Guardrail
-                  </div>
-                  {dosageData.notes.map((note, i) => (
-                    <div key={i}>• {note}</div>
-                  ))}
-                </div>
-              )}
-
-              {/* Assumptions */}
-              <div className="text-[11px] text-slate-500 bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-start gap-2">
-                <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-slate-400">Assumptions: </span>
-                  {dosageData.assumptions}
-                  <div className="mt-1 text-slate-600">Source: {dosageData.requirements_source}</div>
-                </div>
-              </div>
             </div>
           )}
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-slate-950/60 border-t border-slate-800 flex justify-end">
+        <div className="p-4 sm:p-5 border-t border-[#F0ECE4] bg-[#FAF8F5] flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-bold transition cursor-pointer shadow-xs"
           >
-            Close Calculator
+            Done
           </button>
         </div>
       </div>

@@ -1,11 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Header } from './components/Header';
 import { TelemetryDashboard } from './components/TelemetryDashboard';
 import { AgentConsole } from './components/AgentConsole';
 import { WeatherWidget } from './components/WeatherWidget';
 import { DosageCalculatorModal } from './components/DosageCalculatorModal';
-import { DataExplorerModal } from './components/DataExplorerModal';
-import { ContractModal } from './components/ContractModal';
 import { MilestoneJudgingModal } from './components/MilestoneJudgingModal';
 import { CropTools } from './lib/cropTools';
 import { AgentExecutor } from './lib/agentEngine';
@@ -19,9 +17,12 @@ import {
   Gauge,
   Thermometer,
   TrendingDown,
+  TrendingUp,
+  Minus,
   BarChart3,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Award
 } from 'lucide-react';
 
 export default function App() {
@@ -33,8 +34,6 @@ export default function App() {
 
   // Modals
   const [isCalculatorOpen, setIsCalculatorOpen] = useState<boolean>(false);
-  const [isDataOpen, setIsDataOpen] = useState<boolean>(false);
-  const [isContractOpen, setIsContractOpen] = useState<boolean>(false);
   const [isMilestonesOpen, setIsMilestonesOpen] = useState<boolean>(false);
 
   // Initialize Tools and Agent
@@ -42,6 +41,7 @@ export default function App() {
   const agentExecutor = useMemo(() => new AgentExecutor(cropTools), [cropTools]);
 
   const latestReading = telemetry[telemetry.length - 1] || { moisture: 22, N: 40, P: 20, K: 30, pH: 6.2, temperature: 32 };
+  const currentScenario = TELEMETRY_SCENARIOS[activeScenarioKey];
 
   // Handle Scenario Change
   const handleSelectScenario = (key: string) => {
@@ -69,7 +69,7 @@ export default function App() {
             thought: 'Analyze telemetry and compute dosage.',
             tool: 'get_soil_readings',
             args: { days: 7 },
-            observation: cropTools.getSoilReadings(7)
+            observation: JSON.stringify({ latest: latestReading })
           }
         ]
       };
@@ -80,171 +80,192 @@ export default function App() {
     }
   };
 
-  // Run initial query on mount so users immediately see a working advisory decision
-  useEffect(() => {
-    handleRunQuery('Should I irrigate my 1 acre tomato field today?', false);
-  }, [activeScenarioKey]);
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white">
-      {/* App Header */}
+    <div className="min-h-screen bg-[#FAF8F5] text-[#262E2B] flex flex-col font-sans">
+      {/* Top Agricultural Navigation */}
       <Header
-        onOpenData={() => setIsDataOpen(true)}
         onOpenCalculator={() => setIsCalculatorOpen(true)}
-        onOpenContract={() => setIsContractOpen(true)}
-        onOpenMilestones={() => setIsMilestonesOpen(true)}
-        scenarioName={TELEMETRY_SCENARIOS[activeScenarioKey]?.name || 'Live Telemetry'}
+        activeScenarioKey={activeScenarioKey}
+        onSelectScenario={handleSelectScenario}
       />
 
-      {/* Main Container - Chat & Answers are the Main Focus */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
-        {/* Compact Field Telemetry Bar */}
-        <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-3.5 shadow-md flex flex-wrap items-center justify-between gap-3 text-xs">
-          {/* Scenario Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-medium whitespace-nowrap">Active Plot:</span>
-            <select
-              value={activeScenarioKey}
-              onChange={(e) => handleSelectScenario(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer font-medium"
+      {/* Main Container with Generous Spacing */}
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Quick Field Telemetry Metric Cards */}
+        <div className="bg-white rounded-2xl border border-[#E8E2D9] p-5 sm:p-6 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#F0ECE4]">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#2D6A4F] animate-pulse"></span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#6D4C41]">
+                  Active Field Telemetry
+                </span>
+                <span className="text-xs text-[#8D6E63] font-mono">
+                  &bull; {currentScenario?.locationName}
+                </span>
+              </div>
+              <h2 className="text-base font-bold text-[#1A2421]">
+                {currentScenario?.name}
+              </h2>
+            </div>
+
+            <button
+              onClick={() => setShowCharts(!showCharts)}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#F5EBE6] text-[#6D4C41] border border-[#D7CCC8] transition cursor-pointer text-xs font-semibold self-start md:self-auto"
             >
-              {Object.entries(TELEMETRY_SCENARIOS).map(([key, item]) => (
-                <option key={key} value={key}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+              <BarChart3 className="w-3.5 h-3.5 text-[#2D6A4F]" />
+              <span>{showCharts ? 'Hide Sensor Charts' : 'View Sensor Charts'}</span>
+              {showCharts ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
           </div>
 
-          {/* Quick Metrics Badges */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
-              <Droplets className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="text-slate-400">Moisture:</span>
-              <span className="font-bold text-cyan-300">{latestReading.moisture}%</span>
-              <span className="text-[10px] text-rose-400 flex items-center font-semibold">
-                <TrendingDown className="w-2.5 h-2.5 mr-0.5" /> Falling
-              </span>
+          {/* 4 Spacious Metric Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
+            {/* Moisture */}
+            <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E2D9] space-y-1">
+              <div className="flex items-center justify-between text-xs text-[#60584F]">
+                <span className="flex items-center gap-1.5 font-semibold text-[#6D4C41]">
+                  <Droplets className="w-4 h-4 text-[#2D6A4F]" /> Soil Moisture
+                </span>
+                <span className="text-[11px] font-bold text-[#B71C1C] flex items-center">
+                  <TrendingDown className="w-3 h-3 mr-0.5" /> Falling
+                </span>
+              </div>
+              <div className="text-2xl font-extrabold text-[#1A2421]">
+                {latestReading.moisture}%
+              </div>
+              <div className="text-[11px] text-[#60584F]">
+                Target: {activeScenarioKey === 'rice_field' ? '80%' : '65%'} field capacity
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
-              <Activity className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-slate-400">NPK:</span>
-              <span className="font-bold text-emerald-300">{latestReading.N}-{latestReading.P}-{latestReading.K}</span>
+            {/* NPK */}
+            <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E2D9] space-y-1">
+              <div className="text-xs text-[#6D4C41] font-semibold flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-[#2D6A4F]" /> Soil N-P-K
+              </div>
+              <div className="text-2xl font-extrabold text-[#1A2421]">
+                {latestReading.N}-{latestReading.P}-{latestReading.K}
+              </div>
+              <div className="text-[11px] text-[#60584F]">
+                kg/ha available in root-zone
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
-              <Gauge className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-slate-400">pH:</span>
-              <span className="font-bold text-amber-300">{latestReading.pH}</span>
+            {/* pH */}
+            <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E2D9] space-y-1">
+              <div className="text-xs text-[#6D4C41] font-semibold flex items-center gap-1.5">
+                <Gauge className="w-4 h-4 text-[#8D6E63]" /> Soil pH Level
+              </div>
+              <div className="text-2xl font-extrabold text-[#1A2421]">
+                {latestReading.pH}
+              </div>
+              <div className="text-[11px] text-[#1E5128] font-semibold">
+                Bioavailability: Optimal (6.0-6.8)
+              </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
-              <Thermometer className="w-3.5 h-3.5 text-rose-400" />
-              <span className="text-slate-400">Temp:</span>
-              <span className="font-bold text-slate-200">{latestReading.temperature || 32}°C</span>
+            {/* Temp */}
+            <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E2D9] space-y-1">
+              <div className="text-xs text-[#6D4C41] font-semibold flex items-center gap-1.5">
+                <Thermometer className="w-4 h-4 text-[#795548]" /> Root-Zone Temp
+              </div>
+              <div className="text-2xl font-extrabold text-[#1A2421]">
+                {latestReading.temperature || 32}°C
+              </div>
+              <div className="text-[11px] text-[#60584F]">
+                Ambient Humidity: {latestReading.humidity || 65}%
+              </div>
             </div>
           </div>
-
-          {/* Toggle Full Chart & Analytics */}
-          <button
-            onClick={() => setShowCharts(!showCharts)}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer text-xs ml-auto"
-          >
-            <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
-            <span>{showCharts ? 'Hide Charts' : 'View Sensor Charts'}</span>
-            {showCharts ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
         </div>
 
         {/* Optional Collapsible Sensor Charts */}
         {showCharts && (
-          <div className="transition-all duration-300">
-            <TelemetryDashboard
-              telemetry={telemetry}
-              scenarios={TELEMETRY_SCENARIOS}
-              activeScenarioKey={activeScenarioKey}
-              onSelectScenario={handleSelectScenario}
-              crop={telemetry[telemetry.length - 1]?.crop || 'tomato'}
-            />
-          </div>
+          <TelemetryDashboard
+            telemetry={telemetry}
+            crop={activeScenarioKey === 'rice_field' ? 'Rice' : 'Tomato'}
+          />
         )}
 
-        {/* Primary Home Page Layout: Chat & Answers Section (Main) + Sidebar */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* Dedicated Chat Section & Answers Section (8 cols) */}
+        {/* Main 2-Column Section with Ample Breathing Room */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Farm Advisory Console (8 cols) */}
           <div className="lg:col-span-8">
             <AgentConsole
               onRunQuery={handleRunQuery}
               isLoading={isLoading}
               lastResponse={lastResponse}
-              onOpenContract={() => setIsContractOpen(true)}
-              scenarioName={TELEMETRY_SCENARIOS[activeScenarioKey]?.name || 'Live Telemetry'}
+              scenarioName={currentScenario?.name || 'Live Telemetry'}
             />
           </div>
 
-          {/* Right Sidebar: Weather & Agronomic Guidelines (4 cols) */}
-          <div className="lg:col-span-4 space-y-5">
+          {/* Right Column: Weather Radar & Farm Principles (4 cols) */}
+          <div className="lg:col-span-4 space-y-6">
             {/* Live Meteorological Radar */}
             <WeatherWidget
               cropTools={cropTools}
-              lat={TELEMETRY_SCENARIOS[activeScenarioKey]?.lat}
-              lon={TELEMETRY_SCENARIOS[activeScenarioKey]?.lon}
-              locationName={TELEMETRY_SCENARIOS[activeScenarioKey]?.locationName}
+              lat={currentScenario?.lat}
+              lon={currentScenario?.lon}
+              locationName={currentScenario?.locationName}
             />
 
-            {/* Field Guidelines Card */}
-            <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-5 shadow-xl space-y-4">
-              <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-                <BookOpen className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                  Agronomic Field Guidelines
+            {/* Agronomic Field Principles Card */}
+            <div className="bg-white rounded-2xl border border-[#E8E2D9] p-6 shadow-xs space-y-4">
+              <div className="flex items-center gap-2.5 pb-3 border-b border-[#F0ECE4]">
+                <div className="w-8 h-8 rounded-lg bg-[#F5EBE6] text-[#6D4C41] flex items-center justify-center">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#6D4C41]">
+                  Agronomic Guidelines
                 </h3>
               </div>
 
-              <div className="space-y-2.5 text-xs text-slate-300">
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>
-                    <strong className="text-white">Rain &ge; 60% within 48h:</strong> Automatically postpone fertilizer and suspend irrigation.
+              <div className="space-y-3.5 text-xs text-[#262E2B]">
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-[#2D6A4F] shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">
+                    <strong className="text-[#1A2421]">48h Rain Rule:</strong> If rain probability is &ge; 60%, automatically suspend irrigation and delay fertilizer to avoid leaching.
                   </span>
                 </div>
 
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
-                  <span>
-                    <strong className="text-white">Moisture Falling:</strong> If moisture drops &lt; ideal (65%) and no rain expected, recommend immediate irrigation.
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-[#2D6A4F] shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">
+                    <strong className="text-[#1A2421]">Irrigation Depth Cap:</strong> Single surface irrigation is capped at 25 mm (101,172 L/acre) to prevent root hypoxia.
                   </span>
                 </div>
 
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                  <span>
-                    <strong className="text-white">3-Reading Guardrail:</strong> If &lt; 3 sensor readings exist, refuse dosage calculation and flag missing data.
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-[#2D6A4F] shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">
+                    <strong className="text-[#1A2421]">Fertilizer Safety Cap:</strong> Chemical nitrogen is strictly capped at 60 kg/acre to protect roots from osmotic burn.
                   </span>
                 </div>
-
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>
-                    <strong className="text-white">Cap Guardrail:</strong> Nitrogen, Phosphorus & Potassium capped at 60 kg/acre max to prevent chemical burn.
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                <span>TNAU & ICAR Standards</span>
-                <button
-                  onClick={() => setIsContractOpen(true)}
-                  className="text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer"
-                >
-                  View Contract Spec &rarr;
-                </button>
               </div>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Elegant, Dignified Agricultural Footer */}
+      <footer className="border-t border-[#E8E2D9] bg-white mt-12 py-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#60584F]">
+          <div>
+            Uzhavan AgriAgent &bull; Grounded in Tamil Nadu Agricultural University (TNAU) & ICAR-IIHR benchmarks
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsMilestonesOpen(true)}
+              className="flex items-center gap-1.5 text-[#6D4C41] hover:text-[#2D6A4F] font-semibold transition cursor-pointer"
+            >
+              <Award className="w-3.5 h-3.5 text-[#2D6A4F]" />
+              <span>Challenge Rubric & Evaluation Spec</span>
+            </button>
+          </div>
+        </div>
+      </footer>
 
       {/* Modals */}
       <DosageCalculatorModal
@@ -253,36 +274,12 @@ export default function App() {
         cropTools={cropTools}
       />
 
-      <DataExplorerModal
-        isOpen={isDataOpen}
-        onClose={() => setIsDataOpen(false)}
-        cropTools={cropTools}
-      />
-
-      <ContractModal
-        isOpen={isContractOpen}
-        onClose={() => setIsContractOpen(false)}
-        lastResponse={lastResponse}
-      />
-
       <MilestoneJudgingModal
         isOpen={isMilestonesOpen}
         onClose={() => setIsMilestonesOpen(false)}
         onRunTestQuery={handleRunQuery}
         lastResponse={lastResponse}
       />
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950/80 py-4 mt-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 font-mono">
-          <div>
-            AgentX Crop Telemetry &bull; Tamil Nadu Agricultural University & ICAR Agronomic Grounding
-          </div>
-          <div>
-            Single Stdout JSON Contract: <span className="text-emerald-400 font-bold">&#123; answer, trace &#125;</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

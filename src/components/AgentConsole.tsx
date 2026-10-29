@@ -5,24 +5,13 @@ import {
   Send,
   RotateCcw,
   Sparkles,
-  Bot,
-  User,
-  Wrench,
-  Clock,
-  Copy,
-  Check,
   ChevronDown,
-  ChevronRight,
+  ChevronUp,
   Languages,
   ShieldCheck,
-  FileCode,
-  Droplets,
-  CloudRain,
-  Activity,
-  AlertTriangle,
-  CheckCircle2,
+  Clock,
   Trash2,
-  ArrowRight
+  Sprout
 } from 'lucide-react';
 
 export interface ChatMessage {
@@ -39,7 +28,6 @@ interface AgentConsoleProps {
   onRunQuery: (query: string, dryRun: boolean) => Promise<AgentJudgesResponse>;
   isLoading: boolean;
   lastResponse: AgentJudgesResponse | null;
-  onOpenContract: () => void;
   scenarioName: string;
 }
 
@@ -47,26 +35,21 @@ const FARMER_QUICK_ACTIONS = [
   { label: '💧 Water Advice (பாசனம்)', query: 'Should I irrigate my 1 acre tomato field today?' },
   { label: '🌾 Fertilizer Dose (உரம்)', query: 'What fertilizer does my tomato need at flowering stage (1 acre)?' },
   { label: '🌦️ Rain Forecast (வானிலை)', query: 'Analyze 48h rain risk and moisture trend for Trichy' },
-  { label: '🧪 Soil Health (மண் தரம்)', query: 'What is the current soil pH and health for tomato?' },
-  { label: '🌾 Rice Paddy (நெல் பயிர்)', query: 'Rice paddy in Thanjavur: evaluate soil telemetry and water requirement' }
+  { label: '🧪 Soil Health (மண் தரம்)', query: 'What is the current soil pH and health for tomato?' }
 ];
 
 export const AgentConsole: React.FC<AgentConsoleProps> = ({
   onRunQuery,
   isLoading,
   lastResponse,
-  onOpenContract,
   scenarioName
 }) => {
   const [query, setQuery] = useState('');
-  const [dryRun, setDryRun] = useState(false);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedTraces, setExpandedTraces] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Maintain full conversational chat history
+  // Maintain conversational chat history
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    // Initial rich answer on load so answers section is populated right away
     const initialAnswer = lastResponse
       ? lastResponse.answer
       : `URGENCY: RED
@@ -100,25 +83,13 @@ Estimate only. Confirm with a local agriculture officer.`;
               thought: 'Analyze moisture trend to see if soil moisture is falling, rising, or stable.',
               tool: 'analyze_trend',
               args: { column: 'moisture', days: 7 },
-              observation: '{"column": "moisture", "readings": 7, "slope_per_reading": -1.214, "status": "falling"}'
+              observation: '{"column": "moisture", "status": "falling", "slope_per_reading": -1.21}'
             },
             {
-              thought: 'Retrieve ideal crop requirements for tomato flowering stage.',
-              tool: 'get_crop_requirements',
-              args: { crop: 'tomato', stage: 'flowering' },
-              observation: '{"crop": "tomato", "ideal": {"N": 100, "P": 50, "K": 60, "moisture": 65}}'
-            },
-            {
-              thought: 'Check Open-Meteo weather forecast for rain probability in Trichy.',
-              tool: 'get_weather_forecast',
-              args: { lat: 10.79, lon: 78.7 },
-              observation: '{"rain_probability_pct": [20, 15, 10], "rain_mm": [0.0, 0.0, 0.0]}'
-            },
-            {
-              thought: 'Calculate fertilizer NPK and irrigation water dosage needed.',
+              thought: 'Calculate fertilizer NPK and irrigation water dosage needed for 1 acre.',
               tool: 'calculate_dosage',
               args: { crop: 'tomato', area_acres: 1.0, stage: 'flowering' },
-              observation: '{"dosage": {"N": {"dose_kg": 24.28}, "water": {"irrigation_mm": 25.0, "litres": 101172}}}'
+              observation: '{"dosage": {"water_mm": 25.0, "litres": 101172, "N_kg": 24.28}}'
             }
           ]
         },
@@ -135,93 +106,49 @@ Estimate only. Confirm with a local agriculture officer.`;
     scrollToBottom();
   }, [messages, isLoading]);
 
-  // Update initial message if lastResponse updates from parent
-  useEffect(() => {
-    if (lastResponse && messages.length <= 2) {
-      setMessages(prev => {
-        const parsed = parseAdvice(lastResponse.answer);
-        return [
-          prev[0] || {
-            id: 'msg-init-user',
-            sender: 'user',
-            text: 'Should I irrigate my 1 acre tomato field today?',
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          },
-          {
-            id: 'msg-init-agent',
-            sender: 'agent',
-            text: lastResponse.answer,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            response: lastResponse,
-            parsedAdvice: parsed
-          }
-        ];
-      });
-    }
-  }, [lastResponse]);
+  const handleExecute = async (targetQuery: string) => {
+    if (!targetQuery.trim() || isLoading) return;
 
-  const handleExecute = async (queryText: string) => {
-    const textToRun = queryText.trim() || 'Should I irrigate my 1 acre tomato field today?';
-    if (isLoading) return;
+    const userMsgId = `usr-${Date.now()}`;
+    const userMsg: ChatMessage = {
+      id: userMsgId,
+      sender: 'user',
+      text: targetQuery,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
 
-    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const userMsgId = `user-${Date.now()}`;
-    const agentMsgId = `agent-${Date.now()}`;
-
-    // 1. Immediately append user message
-    setMessages(prev => [
-      ...prev,
-      {
-        id: userMsgId,
-        sender: 'user',
-        text: textToRun,
-        timestamp: timeStr
-      }
-    ]);
-
+    setMessages(prev => [...prev, userMsg]);
     setQuery('');
 
-    // 2. Run query through agent
     try {
-      const response = await onRunQuery(textToRun, dryRun);
+      const response = await onRunQuery(targetQuery, false);
       const parsed = parseAdvice(response.answer);
 
-      setMessages(prev => [
-        ...prev,
-        {
-          id: agentMsgId,
-          sender: 'agent',
-          text: response.answer,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          response,
-          parsedAdvice: parsed
-        }
-      ]);
-    } catch (err: any) {
-      const fallbackText = `URGENCY: YELLOW\nADVICE: Telemetry evaluated for ${textToRun}. Moisture monitoring advised.\nஆலோசனை: மண் ஈரப்பதத்தை தொடர்ந்து கண்காணிக்கவும்.\nEstimate only. Confirm with a local agriculture officer.`;
-      setMessages(prev => [
-        ...prev,
-        {
-          id: agentMsgId,
-          sender: 'agent',
-          text: fallbackText,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isError: true,
-          parsedAdvice: parseAdvice(fallbackText)
-        }
-      ]);
+      const agentMsg: ChatMessage = {
+        id: `agent-${Date.now()}`,
+        sender: 'agent',
+        text: response.answer,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        response,
+        parsedAdvice: parsed
+      };
+
+      setMessages(prev => [...prev, agentMsg]);
+    } catch {
+      const errorMsg: ChatMessage = {
+        id: `agent-err-${Date.now()}`,
+        sender: 'agent',
+        text: 'Error evaluating query. Please try again.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isError: true
+      };
+      setMessages(prev => [...prev, errorMsg]);
     }
   };
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     handleExecute(query || 'Should I irrigate my 1 acre tomato field today?');
-  };
-
-  const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const toggleTrace = (id: string) => {
@@ -236,22 +163,22 @@ Estimate only. Confirm with a local agriculture officer.`;
     switch (urgency) {
       case 'RED':
         return (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-bold text-xs tracking-wider uppercase">
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] font-bold text-xs tracking-wide">
+            <span className="w-2 h-2 rounded-full bg-[#C62828] animate-ping"></span>
             URGENCY: RED — Act Today
           </div>
         );
       case 'YELLOW':
         return (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs tracking-wider uppercase">
-            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF3E0] border border-[#FFE0B2] text-[#BF360C] font-bold text-xs tracking-wide">
+            <span className="w-2 h-2 rounded-full bg-[#E65100]"></span>
             URGENCY: YELLOW — Act within 2-3 Days
           </div>
         );
       default:
         return (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-xs tracking-wider uppercase">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F5E9] border border-[#C8E6C9] text-[#1B5E20] font-bold text-xs tracking-wide">
+            <span className="w-2 h-2 rounded-full bg-[#2E7D32]"></span>
             URGENCY: GREEN — Optimal Condition
           </div>
         );
@@ -259,115 +186,107 @@ Estimate only. Confirm with a local agriculture officer.`;
   };
 
   return (
-    <div className="bg-slate-900/90 rounded-2xl border border-slate-800 shadow-2xl flex flex-col h-[750px] overflow-hidden">
-      {/* Chat Section Header */}
-      <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-slate-950 shadow-md shadow-emerald-500/20">
-            <Bot className="w-6 h-6 stroke-[2.2]" />
+    <div className="bg-white rounded-2xl border border-[#E8E2D9] shadow-xs flex flex-col h-[760px] overflow-hidden">
+      {/* Console Header */}
+      <div className="p-5 sm:p-6 border-b border-[#F0ECE4] bg-white flex items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-base font-bold text-[#1A2421] tracking-tight">
+              Farm Advisory Console
+            </h2>
+            <span className="px-2.5 py-0.5 text-[11px] font-semibold bg-[#E8F5E9] text-[#2D6A4F] border border-[#C8E6C9] rounded-full">
+              Live Telemetry
+            </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-white tracking-wide">
-                AgriAgent Farm Advisory Chat
-              </h2>
-              <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
-                Active
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">
-              Interactive soil moisture, crop stress & fertilizer advisory for <span className="text-emerald-400 font-semibold">{scenarioName}</span>
-            </p>
-          </div>
+          <p className="text-xs text-[#60584F] mt-0.5">
+            Grounded soil & crop stress advisory for <span className="text-[#2D6A4F] font-semibold">{scenarioName}</span>
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs">
-          {messages.length > 0 && (
-            <button
-              onClick={handleClearChat}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer"
-              title="Clear Chat History"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
-
-        </div>
+        {messages.length > 0 && (
+          <button
+            onClick={handleClearChat}
+            className="p-2 rounded-xl text-[#8D6E63] hover:text-[#B71C1C] hover:bg-[#FFEBEE] transition cursor-pointer"
+            title="Clear Chat History"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
-      {/* Main Conversation & Answers Thread (Scrollable) */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-slate-950/40">
+      {/* Main Conversation Thread */}
+      <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 bg-[#FAF8F5]">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-3">
-            <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 text-emerald-400">
-              <Bot className="w-8 h-8" />
+          <div className="h-full flex flex-col items-center justify-center text-center p-8 text-[#60584F] space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-[#E8F5E9] border border-[#C8E6C9] flex items-center justify-center text-[#2D6A4F]">
+              <Sprout className="w-6 h-6 stroke-[2.2]" />
             </div>
-            <h3 className="text-sm font-bold text-white">No Advisory Questions Yet</h3>
-            <p className="text-xs max-w-sm text-slate-400">
-              Ask AgriAgent about crop irrigation, soil moisture trends, or fertilizer dosage below.
-            </p>
+            <div className="max-w-md space-y-1">
+              <h3 className="text-sm font-bold text-[#1A2421]">
+                No questions asked yet
+              </h3>
+              <p className="text-xs text-[#60584F]">
+                Click one of the quick questions below or type your farm inquiry to receive precision advice in English and Tamil.
+              </p>
+            </div>
           </div>
         ) : (
           messages.map((msg) => {
             if (msg.sender === 'user') {
               return (
-                <div key={msg.id} className="flex justify-end items-start gap-2.5">
-                  <div className="max-w-xl bg-emerald-700/30 border border-emerald-600/40 text-emerald-100 rounded-2xl rounded-tr-sm px-4 py-3 shadow-md space-y-1">
-                    <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
-                    <div className="text-[10px] text-emerald-400/80 text-right font-mono">
+                <div key={msg.id} className="flex justify-end">
+                  <div className="max-w-xl bg-[#F5EBE6] border border-[#E6D7C3] text-[#4E342E] rounded-2xl px-5 py-3.5 shadow-xs">
+                    <p className="text-sm font-semibold">{msg.text}</p>
+                    <span className="text-[10px] text-[#8D6E63] block text-right mt-1">
                       {msg.timestamp}
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-slate-950 font-bold shrink-0 mt-0.5">
-                    <User className="w-4 h-4" />
+                    </span>
                   </div>
                 </div>
               );
             }
 
-            // Agent Message: Rich Answer Card
+            // Agent Advisory Bubble
             const advice = msg.parsedAdvice;
             const trace = msg.response?.trace || [];
-            const isTraceExpanded = expandedTraces[msg.id] ?? false;
+            const isTraceExpanded = expandedTraces[msg.id];
 
             return (
-              <div key={msg.id} className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-slate-950 font-bold shrink-0 mt-0.5 shadow-md shadow-emerald-500/20">
-                  <Bot className="w-4 h-4" />
-                </div>
-
-                <div className="flex-1 max-w-2xl bg-slate-900/95 border border-slate-800/90 rounded-2xl rounded-tl-sm p-4 sm:p-5 shadow-xl space-y-4">
-                  {/* Card Header: Urgency Banner & Actions */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
+              <div key={msg.id} className="flex justify-start">
+                <div className="max-w-2xl w-full bg-white border border-[#E8E2D9] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+                  {/* Card Header & Urgency Badge */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#F0ECE4]">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-white">
-                        Farm Advisory Recommendation
+                      <div className="w-7 h-7 rounded-lg bg-[#E8F5E9] text-[#2D6A4F] flex items-center justify-center">
+                        <Sprout className="w-4 h-4 stroke-[2.2]" />
+                      </div>
+                      <span className="text-xs font-bold text-[#1A2421]">
+                        Uzhavan Advisory
                       </span>
                     </div>
                     {renderUrgencyBadge(advice?.urgency)}
                   </div>
 
                   {/* Bilingual Advice Section */}
-                  <div className="space-y-3">
+                  <div className="space-y-3.5">
                     {/* English Advice */}
-                    <div className="bg-slate-950/70 rounded-xl p-3.5 border border-slate-800/80 space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                        <Languages className="w-3.5 h-3.5 text-blue-400" />
+                    <div className="bg-[#FAF8F5] rounded-xl p-4 border border-[#E8E2D9] space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#6D4C41] uppercase tracking-wider">
+                        <Languages className="w-3.5 h-3.5 text-[#2D6A4F]" />
                         English Recommendation
                       </div>
-                      <p className="text-sm text-slate-100 font-medium leading-relaxed">
+                      <p className="text-sm text-[#1A2421] font-medium leading-relaxed">
                         {advice?.englishAdvice || msg.text}
                       </p>
                     </div>
 
                     {/* Tamil Advice */}
                     {advice?.tamilAdvice && (
-                      <div className="bg-emerald-950/25 rounded-xl p-3.5 border border-emerald-900/40 space-y-1.5">
-                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-300 uppercase tracking-wider">
-                          <Languages className="w-3.5 h-3.5 text-emerald-400" />
+                      <div className="bg-[#E8F5E9] rounded-xl p-4 border border-[#C8E6C9] space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#1B5E20] uppercase tracking-wider">
+                          <Languages className="w-3.5 h-3.5 text-[#2D6A4F]" />
                           தமிழ் ஆலோசனை (Tamil Advisory)
                         </div>
-                        <p className="text-sm text-emerald-100 font-medium leading-relaxed">
+                        <p className="text-sm text-[#1B5E20] font-medium leading-relaxed">
                           {advice.tamilAdvice}
                         </p>
                       </div>
@@ -375,44 +294,43 @@ Estimate only. Confirm with a local agriculture officer.`;
                   </div>
 
                   {/* Agronomic Disclaimer */}
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 pt-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <div className="flex items-center gap-1.5 text-[11px] text-[#60584F] pt-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#2D6A4F] shrink-0" />
                     <span>{advice?.disclaimer || 'Estimate only. Confirm with a local agriculture officer.'}</span>
                   </div>
 
                   {/* Calculation Details Footer */}
                   {trace.length > 0 && (
-                    <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                    <div className="pt-3 border-t border-[#F0ECE4] flex items-center justify-between">
                       <button
                         onClick={() => toggleTrace(msg.id)}
-                        className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-medium transition cursor-pointer"
+                        className="flex items-center gap-1.5 text-xs text-[#2D6A4F] hover:text-[#1B4332] font-semibold transition cursor-pointer"
                       >
-                        <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                        <Clock className="w-3.5 h-3.5 text-[#2D6A4F]" />
                         <span>View Calculation Details (கணக்கீட்டு விவரங்கள்)</span>
-                        {isTraceExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                        {isTraceExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   )}
 
                   {/* Collapsible Reasoning & Tool Execution Trace */}
                   {isTraceExpanded && trace.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-slate-800/60 space-y-2 text-xs font-mono">
+                    <div className="mt-3 pt-3 border-t border-[#F0ECE4] space-y-2.5 text-xs">
                       {trace.map((step, idx) => (
-                        <div key={idx} className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
-                          <div className="flex items-center gap-2 text-cyan-300 font-bold">
-                            <span className="w-4 h-4 rounded bg-cyan-950 text-cyan-400 text-[10px] flex items-center justify-center">
+                        <div key={idx} className="bg-[#FAF8F5] p-3.5 rounded-xl border border-[#E8E2D9] space-y-1.5">
+                          <div className="flex items-center gap-2 text-[#2D6A4F] font-bold font-mono">
+                            <span className="w-4 h-4 rounded bg-[#E8F5E9] text-[#1E5128] text-[10px] flex items-center justify-center">
                               {idx + 1}
                             </span>
                             <span>{step.tool}</span>
-                            <span className="text-[10px] text-slate-500 font-normal truncate max-w-xs">
+                            <span className="text-[10px] text-[#8D6E63] font-normal truncate max-w-xs">
                               {JSON.stringify(step.args)}
                             </span>
                           </div>
-                          <div className="text-slate-300 text-[11px] font-sans">
-                            <span className="text-emerald-400 font-bold font-mono">Thought: </span>
-                            {step.thought}
+                          <div className="text-[#60584F] text-[11px]">
+                            <strong className="text-[#6D4C41]">Reasoning:</strong> {step.thought}
                           </div>
-                          <div className="text-slate-400 text-[10px] bg-slate-900/80 p-2 rounded max-h-24 overflow-y-auto whitespace-pre-wrap">
+                          <div className="bg-white p-2 rounded-lg border border-[#E8E2D9] text-[#1A2421] text-[11px] font-mono overflow-x-auto">
                             {step.observation}
                           </div>
                         </div>
@@ -425,19 +343,14 @@ Estimate only. Confirm with a local agriculture officer.`;
           })
         )}
 
-        {/* Live Loading Indicator in Chat */}
+        {/* Loading Indicator */}
         {isLoading && (
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-              <RotateCcw className="w-4 h-4 animate-spin" />
-            </div>
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 text-xs text-slate-300 space-y-1">
-              <div className="font-semibold text-emerald-400 flex items-center gap-1.5">
-                <span>AgriAgent is analyzing root-zone telemetry...</span>
-              </div>
-              <div className="text-[11px] text-slate-400">
-                Checking 7-day soil trend, Open-Meteo weather radar, and calculating exact NPK & water dosage.
-              </div>
+          <div className="flex justify-start">
+            <div className="bg-white border border-[#E8E2D9] rounded-2xl p-4 shadow-xs flex items-center gap-3">
+              <RotateCcw className="w-4 h-4 text-[#2D6A4F] animate-spin" />
+              <span className="text-xs font-semibold text-[#1A2421]">
+                Analyzing soil telemetry & Open-Meteo weather radar...
+              </span>
             </div>
           </div>
         )}
@@ -445,10 +358,10 @@ Estimate only. Confirm with a local agriculture officer.`;
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Farmer Quick Action Chips */}
-      <div className="px-4 py-2.5 bg-slate-950/80 border-t border-slate-800 flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
-        <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1 shrink-0 mr-1">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Quick Questions:
+      {/* Quick Action Chips */}
+      <div className="px-5 py-3 bg-[#FAF8F5] border-t border-[#E8E2D9] flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+        <span className="text-[11px] text-[#6D4C41] font-bold flex items-center gap-1 shrink-0 mr-1">
+          <Sparkles className="w-3.5 h-3.5 text-[#D97706]" /> Quick Questions:
         </span>
         {FARMER_QUICK_ACTIONS.map((action, idx) => (
           <button
@@ -456,28 +369,28 @@ Estimate only. Confirm with a local agriculture officer.`;
             type="button"
             onClick={() => handleExecute(action.query)}
             disabled={isLoading}
-            className="text-xs font-medium bg-slate-900 hover:bg-emerald-950/40 hover:text-emerald-300 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700/80 hover:border-emerald-600/50 transition shrink-0 cursor-pointer disabled:opacity-50"
+            className="text-xs font-medium bg-white hover:bg-[#F5EBE6] text-[#262E2B] hover:text-[#5D4037] px-3.5 py-1.5 rounded-xl border border-[#D7CCC8] transition shrink-0 cursor-pointer disabled:opacity-50 shadow-2xs"
           >
             {action.label}
           </button>
         ))}
       </div>
 
-      {/* Chat Input & Submit Bar */}
-      <form onSubmit={handleSubmit} className="p-3 sm:p-4 bg-slate-950 border-t border-slate-800 flex items-center gap-2">
+      {/* Chat Input Bar */}
+      <form onSubmit={handleSubmit} className="p-4 sm:p-5 bg-white border-t border-[#E8E2D9] flex items-center gap-3">
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Ask in English or தமிழ் (e.g. Should I irrigate my 1 acre tomato field today?)..."
           disabled={isLoading}
-          className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 font-sans transition disabled:opacity-50"
+          className="flex-1 bg-[#FAF8F5] border border-[#D7CCC8] rounded-xl px-4 py-3 text-sm text-[#1A2421] placeholder-[#8D6E63] focus:outline-none focus:ring-2 focus:ring-[#2D6A4F]/20 focus:border-[#2D6A4F] transition disabled:opacity-50"
         />
 
         <button
           type="submit"
           disabled={isLoading}
-          className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 flex items-center gap-2 shrink-0 transition cursor-pointer disabled:opacity-50"
+          className="px-6 py-3 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 shrink-0 transition cursor-pointer disabled:opacity-50"
         >
           {isLoading ? (
             <>
@@ -487,7 +400,7 @@ Estimate only. Confirm with a local agriculture officer.`;
           ) : (
             <>
               <span>Ask Advisory</span>
-              <Send className="w-4 h-4 fill-slate-950" />
+              <Send className="w-4 h-4 fill-white" />
             </>
           )}
         </button>

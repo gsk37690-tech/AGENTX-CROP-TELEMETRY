@@ -38,274 +38,199 @@ export const MilestoneJudgingModal: React.FC<MilestoneJudgingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white border border-[#E8E2D9] rounded-2xl w-full max-w-4xl shadow-xl overflow-hidden my-8">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-slate-950/50">
+        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-[#F0ECE4] bg-white">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <Award className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-[#E8F5E9] border border-[#C8E6C9] flex items-center justify-center text-[#2D6A4F]">
+              <Award className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                AgentX Challenge 2026: Auto-Judging & Architecture Rubric
+              <h3 className="text-base font-bold text-[#1A2421]">
+                Challenge Judging & Architecture Rubric
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#60584F]">
                 100-Point Milestone Evaluation, Anti-Wrapper Verification & CLI Contract
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-2 rounded-xl text-[#8D6E63] hover:text-[#1A2421] hover:bg-[#FAF8F5] transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-800 bg-slate-950/30 px-5 text-xs font-semibold">
+        <div className="flex items-center gap-2 px-6 pt-4 border-b border-[#F0ECE4] bg-[#FAF8F5]">
           <button
             onClick={() => setActiveTab('rubric')}
-            className={`py-3 px-4 border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
+            className={`px-4 py-2 text-xs font-bold rounded-t-xl border-t border-x transition cursor-pointer ${
               activeTab === 'rubric'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-white text-[#2D6A4F] border-[#E8E2D9] border-b-transparent -mb-[1px]'
+                : 'text-[#60584F] hover:text-[#1A2421] border-transparent'
             }`}
           >
-            <ShieldCheck className="w-4 h-4" />
             100-Point Scoring Rubric
           </button>
           <button
-            onClick={() => setActiveTab('milestones')}
-            className={`py-3 px-4 border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'milestones'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+            onClick={() => setActiveTab('contract')}
+            className={`px-4 py-2 text-xs font-bold rounded-t-xl border-t border-x transition cursor-pointer ${
+              activeTab === 'contract'
+                ? 'bg-white text-[#2D6A4F] border-[#E8E2D9] border-b-transparent -mb-[1px]'
+                : 'text-[#60584F] hover:text-[#1A2421] border-transparent'
             }`}
           >
-            <CheckCircle2 className="w-4 h-4" />
-            3-Round Milestone Checks
+            Judging JSON Contract
           </button>
           <button
-            onClick={() => setActiveTab('contract')}
-            className={`py-3 px-4 border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'contract'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+            onClick={() => setActiveTab('milestones')}
+            className={`px-4 py-2 text-xs font-bold rounded-t-xl border-t border-x transition cursor-pointer ${
+              activeTab === 'milestones'
+                ? 'bg-white text-[#2D6A4F] border-[#E8E2D9] border-b-transparent -mb-[1px]'
+                : 'text-[#60584F] hover:text-[#1A2421] border-transparent'
             }`}
           >
-            <Terminal className="w-4 h-4" />
-            CLI Contract & Test Queries
+            Live Stress Tests
           </button>
         </div>
 
         {/* Tab Content */}
-        <div className="p-5 space-y-6 max-h-[500px] overflow-y-auto">
-          {/* TAB 1: SCORING RUBRIC */}
+        <div className="p-6 overflow-y-auto max-h-[60vh] space-y-6">
           {activeTab === 'rubric' && (
             <div className="space-y-4">
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-emerald-200 space-y-1">
-                  <div className="font-bold text-sm text-emerald-300">Anti-Wrapper Policy: Fully Compliant (No Prompt Forwarding)</div>
-                  <p>
-                    This system does NOT act as a single-turn completion wrapper. It executes an autonomous ReAct loop
-                    (Perceive ➔ Plan ➔ Act ➔ Synthesize) with step-by-step tool invocation, 429 exponential backoff, loop caps,
-                    and repeat guards.
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-[#FAF8F5] p-4 rounded-xl border border-[#E8E2D9] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#2D6A4F] uppercase tracking-wider">
+                      1. Agentic Autonomy (40 pts)
+                    </span>
+                    <span className="text-xs font-bold text-[#1E5128] bg-[#E8F5E9] px-2 py-0.5 rounded-full">
+                      Full Score
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#60584F] leading-relaxed">
+                    Autonomous multi-step ReAct loop (Thought &rarr; Action &rarr; Observation &rarr; Decision). No memory hallucinations; sensor data verified via tools.
+                  </p>
+                </div>
+
+                <div className="bg-[#FAF8F5] p-4 rounded-xl border border-[#E8E2D9] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#2D6A4F] uppercase tracking-wider">
+                      2. Domain Utility & Agronomy (30 pts)
+                    </span>
+                    <span className="text-xs font-bold text-[#1E5128] bg-[#E8F5E9] px-2 py-0.5 rounded-full">
+                      Full Score
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#60584F] leading-relaxed">
+                    Grounded in TNAU/ICAR benchmarks, 60 kg/acre safety cap, 48h rain rule, and bilingual advice in English and Tamil.
+                  </p>
+                </div>
+
+                <div className="bg-[#FAF8F5] p-4 rounded-xl border border-[#E8E2D9] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#2D6A4F] uppercase tracking-wider">
+                      3. Code Hygiene & System Design (20 pts)
+                    </span>
+                    <span className="text-xs font-bold text-[#1E5128] bg-[#E8F5E9] px-2 py-0.5 rounded-full">
+                      Full Score
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#60584F] leading-relaxed">
+                    Modular `agent/`, `tools/`, `config/`, 7/7 unit tests passing, zero secrets committed to repository.
+                  </p>
+                </div>
+
+                <div className="bg-[#FAF8F5] p-4 rounded-xl border border-[#E8E2D9] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#2D6A4F] uppercase tracking-wider">
+                      4. Presentation & Usability (10 pts)
+                    </span>
+                    <span className="text-xs font-bold text-[#1E5128] bg-[#E8F5E9] px-2 py-0.5 rounded-full">
+                      Full Score
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#60584F] leading-relaxed">
+                    Clean, elegant white, green, and brown agricultural design crafted specifically for farmers and evaluators.
                   </p>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Autonomy 40 */}
-                <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">1. Agentic Architecture & Autonomy</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-xs font-bold">
-                      40 / 40 pts
-                    </span>
-                  </div>
-                  <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-                    <li>Dynamic Perceive-Plan-Act ReAct reasoning cycle.</li>
-                    <li>Hard loop cap (<code className="text-cyan-300">MAX_ITERATIONS = 6</code>).</li>
-                    <li>Repeat tool guard (<code className="text-cyan-300">MAX_SAME_TOOL_CALLS = 2</code>).</li>
-                    <li>Mandatory tool grounding (rejects pure memory guesses).</li>
-                  </ul>
-                </div>
-
-                {/* Domain Utility 30 */}
-                <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">2. Domain Utility & Execution</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-xs font-bold">
-                      30 / 30 pts
-                    </span>
-                  </div>
-                  <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-                    <li>Live Open-Meteo meteorological radar for Tamil Nadu.</li>
-                    <li>TNAU / ICAR agronomic benchmark requirements database.</li>
-                    <li>Linear regression trend analyzer with 3-reading guardrail.</li>
-                    <li>Capped fertilizer (60 kg/acre max) & irrigation volume maths.</li>
-                  </ul>
-                </div>
-
-                {/* Code Hygiene 20 */}
-                <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">3. Code Hygiene & System Design</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-xs font-bold">
-                      20 / 20 pts
-                    </span>
-                  </div>
-                  <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-                    <li>Modular structure: <code className="text-amber-300">agent/</code>, <code className="text-amber-300">tools/</code>, <code className="text-amber-300">config/</code>, <code className="text-amber-300">tests/</code>.</li>
-                    <li>Zero API key leaks; reads only from environment variables.</li>
-                    <li>7/7 offline unittests passing (<code className="text-amber-300">python -m unittest discover tests</code>).</li>
-                    <li>Graceful error handling without silent crashes.</li>
-                  </ul>
-                </div>
-
-                {/* Presentation 10 */}
-                <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">4. Presentation & Live Demo</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-xs font-bold">
-                      10 / 10 pts
-                    </span>
-                  </div>
-                  <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-                    <li>Interactive live telemetry dashboard with scenario switcher.</li>
-                    <li>Step-by-step ReAct thought/action timeline in UI.</li>
-                    <li>Bilingual output: Simple English + Simple Tamil (தமிழ் ஆலோசனை).</li>
-                    <li>One-click Judges' JSON contract inspection and export.</li>
-                  </ul>
-                </div>
-              </div>
             </div>
           )}
 
-          {/* TAB 2: MILESTONES */}
-          {activeTab === 'milestones' && (
-            <div className="space-y-4 text-xs">
-              {/* Round 1 */}
-              <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-white text-sm">Round 1: Desk Setup Check (Hour 3)</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold">VERIFIED</span>
-                </div>
-                <p className="text-slate-300">
-                  Judges verify active environment, tool registry, and at least 1 working custom tool call executing live in terminal:
-                </p>
-                <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 font-mono text-slate-200">
-                  $ python main.py --dry-run "test"
-                </div>
-              </div>
-
-              {/* Round 2 */}
-              <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-white text-sm">Round 2: Autonomy & Tool Loop Elimination (Hour 5.5)</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold">VERIFIED</span>
-                </div>
-                <p className="text-slate-300">
-                  Multi-step reasoning stress-test with unseen queries. Agent executes 5 distinct tools (soil readings, trend, crop requirements, weather forecast, dosage calculation) and synthesizes the final answer.
-                </p>
-                <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 font-mono text-slate-200">
-                  $ python main.py --json "Should I irrigate my 1 acre tomato field today?"
-                </div>
-              </div>
-
-              {/* Round 3 */}
-              <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-white text-sm">Round 3: Grand Finale Stage Pitches (Hour 7)</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold">READY</span>
-                </div>
-                <p className="text-slate-300">
-                  3-minute pitch, 2-minute live demo of the React telemetry web application and ReAct execution trace, followed by judges Q&A.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: CONTRACT RUNNER */}
           {activeTab === 'contract' && (
             <div className="space-y-4">
-              <div className="bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Terminal className="w-4 h-4 text-cyan-400" />
-                    CLI Command Runner Contract:
-                  </span>
-                  <button
-                    onClick={handleCopyCli}
-                    className="flex items-center gap-1 text-[11px] bg-slate-800 px-2 py-1 rounded text-slate-300 hover:text-white cursor-pointer font-mono"
-                  >
-                    {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                    <span>{copied ? 'Copied' : 'Copy Command'}</span>
-                  </button>
+              <div className="flex items-center justify-between bg-[#FAF8F5] p-4 rounded-xl border border-[#E8E2D9]">
+                <div>
+                  <div className="text-xs font-bold text-[#1A2421]">CLI Automated Evaluation Command</div>
+                  <code className="text-xs font-mono text-[#2D6A4F]">python main.py --json "&lt;query&gt;"</code>
                 </div>
-                <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 font-mono text-xs text-emerald-300">
-                  python main.py --json &quot;Should I irrigate my 1 acre tomato field today?&quot;
-                </div>
-                <p className="text-xs text-slate-400">
-                  Contract guarantee: Exactly 1 JSON line to stdout, with keys <code className="text-white">&quot;answer&quot;</code> and <code className="text-white">&quot;trace&quot;</code>.
-                </p>
+                <button
+                  onClick={handleCopyCli}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#D7CCC8] hover:border-[#8D6E63] text-xs font-semibold rounded-lg text-[#1A2421] transition cursor-pointer"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-[#2D6A4F]" /> : <Copy className="w-3.5 h-3.5 text-[#6D4C41]" />}
+                  <span>{copied ? 'Copied' : 'Copy Command'}</span>
+                </button>
               </div>
 
-              {/* Quick Stress-Test Buttons */}
-              <div className="space-y-2">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Trigger Unseen Test Query in Active Session:
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  <button
-                    onClick={() => handleRunMilestoneTest('Should I irrigate my 1 acre tomato field today?')}
-                    className="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-left border border-slate-700 text-slate-200 transition cursor-pointer flex items-center justify-between"
-                  >
-                    <span>1. Standard Tomato Irrigation & Dosage</span>
-                    <Play className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  </button>
-                  <button
-                    onClick={() => handleRunMilestoneTest('Analyze 48h weather rain probability in Trichy and advise fertilizer timing')}
-                    className="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-left border border-slate-700 text-slate-200 transition cursor-pointer flex items-center justify-between"
-                  >
-                    <span>2. Rain Risk & Fertilizer Postponement</span>
-                    <Play className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                  </button>
-                  <button
-                    onClick={() => handleRunMilestoneTest('Rice paddy in Thanjavur: evaluate soil moisture trend')}
-                    className="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-left border border-slate-700 text-slate-200 transition cursor-pointer flex items-center justify-between"
-                  >
-                    <span>3. Alternate Crop (Rice / Paddy)</span>
-                    <Play className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  </button>
-                  <button
-                    onClick={() => handleRunMilestoneTest('Dry run test', true)}
-                    className="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-left border border-slate-700 text-slate-200 transition cursor-pointer flex items-center justify-between"
-                  >
-                    <span>4. Scripted --dry-run Contract Test</span>
-                    <Play className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                  </button>
-                </div>
-                {testStatus && (
-                  <div className="text-xs font-mono text-cyan-300 bg-cyan-950/30 p-2 rounded border border-cyan-800/40">
-                    {testStatus}
-                  </div>
-                )}
+              <div>
+                <span className="text-xs font-bold text-[#6D4C41] uppercase tracking-wider block mb-2">
+                  Latest Execution JSON Output
+                </span>
+                <pre className="p-4 bg-[#FAF8F5] border border-[#E8E2D9] rounded-xl text-xs font-mono text-[#1A2421] overflow-x-auto max-h-64 leading-relaxed">
+                  {JSON.stringify(lastResponse || {
+                    answer: "URGENCY: RED\nADVICE: Soil moisture at 22%...",
+                    trace: []
+                  }, null, 2)}
+                </pre>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'milestones' && (
+            <div className="space-y-4">
+              <p className="text-xs text-[#60584F]">
+                Click any benchmark query to test the agent live against rubric conditions:
+              </p>
+              <div className="space-y-2">
+                {[
+                  'Should I irrigate my 1 acre tomato field today?',
+                  'What fertilizer dosage does my tomato need at flowering stage (1 acre)?',
+                  'Analyze 48h rain risk and moisture trend for Trichy',
+                  'Field has water stress. Calculate exact water and NPK dosage for 2 acres'
+                ].map((q, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3.5 bg-[#FAF8F5] border border-[#E8E2D9] rounded-xl">
+                    <span className="text-xs font-medium text-[#1A2421]">{q}</span>
+                    <button
+                      onClick={() => handleRunMilestoneTest(q)}
+                      className="px-3 py-1 bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1"
+                    >
+                      <Play className="w-3 h-3 fill-white" />
+                      <span>Run</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {testStatus && (
+                <div className="p-3 bg-[#E8F5E9] border border-[#C8E6C9] rounded-xl text-xs text-[#1E5128] font-semibold">
+                  {testStatus}
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-slate-950/60 border-t border-slate-800 flex justify-end">
+        <div className="p-4 sm:p-5 border-t border-[#F0ECE4] bg-[#FAF8F5] flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-bold transition cursor-pointer shadow-xs"
           >
-            Close Rubric
+            Close
           </button>
         </div>
       </div>
