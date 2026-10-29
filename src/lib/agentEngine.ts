@@ -63,6 +63,10 @@ To finish:     {"thought": "why", "final_answer": "<complete answer>"}
 Rules:
 - For agricultural queries, call at least one data tool (like get_soil_readings) before giving a final_answer.
 - For conversational/greeting queries, answer directly with final_answer without calling tools.
+- CRITICAL MATH GUARDRAIL: NEVER perform your own mathematical calculations for fertilizer mass or water volume in your thoughts or answers. You must strictly copy the exact numerical results returned by the calculate_dosage tool observation. If calculate_dosage returns 35.2 kg Urea and 28,000 L water, your final text must cite exactly 35.2 kg Urea and 28,000 L water. Any deviation is a critical system error.
+- Agronomic Consistency: If rain probability is low (< 60%, e.g. 20-30% with <2 mm), do NOT tell the farmer to delay if rain occurs and irrigate now at the same time. Explicitly state: "Because rainfall likelihood is low (X%), do not rely on natural precipitation. Proceed with scheduled operations."
+- Fertilizer Chemistry: Never conflate pure elemental Nitrogen (N) with commercial Urea bag weight! Commercial Urea is 46% N (65 kg commercial Urea delivers 30 kg pure N). Always state: "Apply X kg of commercial Urea per acre (equivalent to Y kg pure N)".
+- Hydrological Volume: Never underestimate irrigation volume (1 acre-inch is ~102,790 L). Use exact calculate_dosage volume (e.g. 25,000 to 101,000 L/acre) and give practical pump run-time (e.g. ~2.5 hours for a 5 HP pump).
 - The final_answer MUST follow this exact format:
 URGENCY: RED, YELLOW or GREEN (RED = act today, YELLOW = act within 2-3 days, GREEN = no action needed)
 ADVICE: 2-4 short sentences in simple English, answering the specific question.
@@ -353,92 +357,120 @@ Estimate only. Confirm with a local agriculture officer.`;
     if (isWeatherQuery && !isFertilizerQuery && !isIrrigationQuery) {
       if (maxRainProb48h >= 60) {
         urgency = 'YELLOW';
-        englishLines.push(`Open-Meteo radar indicates a high rain probability of ${maxRainProb48h}% in Tiruchirappalli over the next 48 hours (Day +1: ${rainProbs[0]}%, Day +2: ${rainProbs[1]}%).`);
-        englishLines.push(`Cumulative expected rainfall is ${(rainMms[0] + rainMms[1]).toFixed(1)} mm.`);
-        englishLines.push(`Strictly postpone chemical fertigation and foliar spraying to prevent nutrient wash-off into field drains.`);
-        tamilLines.push(`திருச்சிராப்பள்ளி பகுதியில் அடுத்த 48 மணி நேரத்தில் ${maxRainProb48h}% வரை மழை பெய்ய வாய்ப்புள்ளது.`);
-        tamilLines.push(`மழை முடிவடையும் வரை உரமிடுதல் மற்றும் தெளிப்பான்களை தற்காலிகமாக ஒத்திவைக்கவும்.`);
+        englishLines.push(`Weather Risk: Open-Meteo radar indicates a high rain probability of ${maxRainProb48h}% in Tiruchirappalli over the next 48 hours (Day 1: ${rainProbs[0]}%, Day 2: ${rainProbs[1]}%) with ${(rainMms[0] + rainMms[1]).toFixed(1)} mm cumulative rainfall.`);
+        englishLines.push(`Actionable Prescription: Strictly withhold surface irrigation and postpone chemical fertigation to prevent waterlogging and nutrient leaching.`);
+        tamilLines.push(`அடுத்த 48 மணி நேரத்தில் ${maxRainProb48h}% மழை வாய்ப்புள்ளது (${(rainMms[0] + rainMms[1]).toFixed(1)} மிமீ). உரம் இடுதல் மற்றும் நீர்ப்பாசனத்தை தற்காலிகமாக ஒத்திவைக்கவும்.`);
       } else {
         urgency = 'GREEN';
-        englishLines.push(`Tiruchirappalli weather forecast shows low precipitation risk for the next 3 days (Day +1: ${rainProbs[0]}%, Day +2: ${rainProbs[1]}%, Day +3: ${rainProbs[2]}%).`);
-        englishLines.push(`Conditions are dry and favorable for scheduled field operations, fertigation, and irrigation management.`);
-        tamilLines.push(`அடுத்த 3 நாட்களுக்கு மழை வாய்ப்பு குறைவு (${rainProbs[0]}%).`);
-        tamilLines.push(`உரமிடுதல் மற்றும் பாசன பணிகளை தடையின்றி மேற்கொள்ள உகந்த வானிலை நிலவுகிறது.`);
+        englishLines.push(`Weather Risk: A light rainfall probability (${maxRainProb48h}%) is forecasted over the next 72 hours with negligible accumulation (<2 mm). Do not delay operations, as anticipated rainfall is insufficient to recover soil moisture.`);
+        englishLines.push(`Actionable Prescription: Proceed with scheduled irrigation and fertilizer management according to soil sensor telemetry.`);
+        tamilLines.push(`அடுத்த 72 மணி நேரத்தில் மழை வாய்ப்பு குறைவு (${maxRainProb48h}%, <2 மிமீ). இயற்கை மழையை நம்பாமல் திட்டமிட்ட பாசனம் மற்றும் உரமிடுதலை தடையின்றி தொடரவும்.`);
       }
     }
     // 2. FERTILIZER & NPK FOCUSED QUESTION
     else if (isFertilizerQuery) {
       const nDoseKg = nDose?.dose_kg ?? 24.28;
+      const commUreaKg = nDose?.commercial_kg ?? Math.round((nDoseKg / 0.46) * 10) / 10;
       const pDoseKg = pDose?.dose_kg ?? 12.14;
+      const commSspKg = pDose?.commercial_kg ?? Math.round((pDoseKg / 0.16) * 10) / 10;
       const kDoseKg = kDose?.dose_kg ?? 12.14;
+      const commMopKg = kDose?.commercial_kg ?? Math.round((kDoseKg / 0.60) * 10) / 10;
 
       if (maxRainProb48h >= 60) {
         urgency = 'YELLOW';
-        englishLines.push(`Calculated fertilizer requirement for ${areaAcres} acre(s) of ${targetCrop} (${targetStage} stage) is ${nDoseKg} kg N, ${pDoseKg} kg P, and ${kDoseKg} kg K.`);
-        englishLines.push(`However, rain probability is ${maxRainProb48h}% within 48h; postpone application until the dry window to prevent leaching.`);
-        tamilLines.push(`${areaAcres} ஏக்கர் ${targetCrop} பயிருக்கு ${nDoseKg} கிலோ தழைச்சத்து, ${pDoseKg} கிலோ மணிச்சத்து, ${kDoseKg} கிலோ சாம்பல் சத்து தேவைப்படுகிறது.`);
-        tamilLines.push(`மழை வாய்ப்பு (${maxRainProb48h}%) உள்ளதால் உரம் இடுவதை 2 நாட்களுக்கு தள்ளி வைக்கவும்.`);
+        englishLines.push(`Field Assessment (${targetCrop}): Nitrogen is in deficit (${nDoseKg} kg pure N required for ${areaAcres} acre).`);
+        englishLines.push(`Weather Risk: Rain probability is high (${maxRainProb48h}% within 48h). Postpone top-dressing until after rainfall to prevent fertilizer leaching.`);
+        tamilLines.push(`${areaAcres} ஏக்கர் ${targetCrop} பயிருக்கு ${nDoseKg} கிலோ தூய தழைச்சத்து தேவைப்படுகிறது.`);
+        tamilLines.push(`மழை வாய்ப்பு (${maxRainProb48h}%) உள்ளதால் உரம் இடுவதை மழைக்கு பின் மேற்கொள்ளவும்.`);
       } else {
         urgency = (nDose?.deficit > 20 || pDose?.deficit > 15) ? 'YELLOW' : 'GREEN';
-        englishLines.push(`For ${areaAcres} acre(s) of ${targetCrop} at ${targetStage} stage: Current soil NPK is ${soilData.latest?.N}-${soilData.latest?.P}-${soilData.latest?.K} kg/ha against ideal ${reqData.ideal?.N}-${reqData.ideal?.P}-${reqData.ideal?.K} kg/ha.`);
-        englishLines.push(`Apply ${nDoseKg} kg Nitrogen (approx. ${(nDoseKg * 2.17).toFixed(1)} kg Urea equivalent), ${pDoseKg} kg Phosphorus (DAP), and ${kDoseKg} kg Potassium (MOP).`);
-        englishLines.push(`Doses are safety-capped at 60 kg/acre max to prevent root scorch.`);
-        tamilLines.push(`${areaAcres} ஏக்கருக்கு ${nDoseKg} கிலோ நைட்ரஜன், ${pDoseKg} கிலோ பாஸ்பரஸ் மற்றும் ${kDoseKg} கிலோ பொட்டாசியம் தேவைப்படுகிறது.`);
-        tamilLines.push(`இவற்றை பயிரின் வேர்ப்பகுதியில் சமமாக இட்டு லேசான நீர்ப்பாசனம் செய்யவும்.`);
+        englishLines.push(`Field Assessment (${targetCrop}): Soil NPK is currently ${soilData.latest?.N}-${soilData.latest?.P}-${soilData.latest?.K} kg/ha against ideal ${reqData.ideal?.N}-${reqData.ideal?.P}-${reqData.ideal?.K} kg/ha.`);
+        englishLines.push(`Weather Risk: Rainfall probability is low (${maxRainProb48h}%, <3 mm); do not delay operations.`);
+        
+        // Multi-nutrient completeness guardrail:
+        englishLines.push(`Actionable Prescription: Apply ${commUreaKg} kg of commercial Urea per acre (equivalent to ${nDoseKg} kg pure N) in two split doses.`);
+        if (pDoseKg > 0) {
+          englishLines.push(`Apply ${commSspKg} kg Single Super Phosphate (SSP 16% P2O5) to meet phosphorus deficit.`);
+        }
+        if (kDoseKg > 0) {
+          englishLines.push(`Apply ${commMopKg} kg Muriate of Potash (MOP 60% K2O) to meet potassium deficit.`);
+        }
+        englishLines.push(`Irrigate with ~25,000 L/acre immediately following fertilizer application to prevent ammonia volatilization.`);
+        tamilLines.push(`${areaAcres} ஏக்கருக்கு ${commUreaKg} கிலோ வணிக யூரியா (${nDoseKg} கிலோ தூய N), ${commSspKg} கிலோ SSP மற்றும் ${commMopKg} கிலோ MOP இடவும்.`);
+        tamilLines.push(`உரமிட்டவுடன் அம்மோனியா ஆவியாவதைத் தடுக்க உடனே 25,000 லிட்டர் நீர் பாய்ச்சவும்.`);
       }
     }
     // 3. SOIL pH & ACIDITY FOCUSED QUESTION
     else if (isPhQuery) {
       urgency = (latestPH < 5.8 || latestPH > 7.5) ? 'YELLOW' : 'GREEN';
-      englishLines.push(`Current soil pH is ${latestPH}, indicating slightly acidic soil conditions in the 300 mm root zone.`);
+      englishLines.push(`Field Assessment (${targetCrop}): Current root-zone soil pH is ${latestPH}, indicating slightly acidic conditions in the 300 mm root zone.`);
       englishLines.push(`For ${targetCrop}, the optimal agronomic pH range is 6.0 to 6.8. At pH ${latestPH}, major nutrients (N, P, K) remain readily bioavailable.`);
       if (latestPH < 6.0) {
-        englishLines.push(`Consider applying 100 kg agricultural lime per acre if pH continues to drop.`);
+        englishLines.push(`Actionable Prescription: Apply 100 kg agricultural lime per acre if pH drops below 6.0.`);
       } else {
-        englishLines.push(`No chemical pH amendment (lime or gypsum) is required at this time.`);
+        englishLines.push(`Actionable Prescription: No chemical amendment (lime or gypsum) is required at this time.`);
       }
-      tamilLines.push(`மண்ணின் கார அமிலத்தன்மை (pH) தற்போது ${latestPH} ஆக உள்ளது. இது ${targetCrop} பயிருக்கு ஏற்ற உகந்த வரம்பில் உள்ளது.`);
+      tamilLines.push(`மண்ணின் கார அமிலத்தன்மை (pH) தற்போது ${latestPH} ஆக உள்ளது. இது ${targetCrop} பயிருக்கு உகந்த வரம்பில் உள்ளது.`);
       tamilLines.push(`தற்போது சுண்ணாம்பு அல்லது ஜிப்சம் இட வேண்டிய அவசியம் இல்லை.`);
     }
     // 4. RICE / PADDY IN THANJAVUR / DELTA ZONE
     else if (isRiceQuery) {
       const mm = waterDose?.irrigation_mm ?? 20;
       const litres = waterDose?.litres ?? 80937;
+      const pumpHours = waterDose?.pump_hours_5hp ?? 8.1;
+      const nDoseKg = nDose?.dose_kg ?? 30.0;
+      const commUreaKg = nDose?.commercial_kg ?? Math.round((nDoseKg / 0.46) * 10) / 10;
+      const isFloweringStage = targetStage === 'flowering' || targetStage === 'ripening';
+
       urgency = latestMoisture < 70 ? 'RED' : 'GREEN';
-      englishLines.push(`Paddy rice in the Cauvery Delta requires saturated soil (75-85% moisture) during ${targetStage || 'tillering'} stage.`);
-      englishLines.push(`Current moisture is ${latestMoisture}% (trend: ${moistureStatus}). Apply ${mm} mm irrigation depth (${litres.toLocaleString()} litres for ${areaAcres} acre) to maintain a 2-3 cm standing water film.`);
-      if (nDose && nDose.dose_kg > 0) {
-        englishLines.push(`Apply ${nDose.dose_kg} kg Nitrogen as a top-dressing split.`);
+      englishLines.push(`Field Assessment (Plot - Paddy Rice): Soil moisture is at ${latestMoisture}% (below the 75-85% optimal saturation threshold for ${targetStage || 'tillering'} stage).`);
+      englishLines.push(`Weather Risk: Rainfall likelihood is low (${maxRainProb48h}%, <2 mm). Do not delay operations, as anticipated rainfall is insufficient to recover soil moisture.`);
+      englishLines.push(`Actionable Prescriptions: Apply ${litres.toLocaleString()} Liters of water per acre (${mm} mm depth, or run standard 5 HP irrigation pump for ~${pumpHours} hours) to restore soil saturation and maintain a 2-3 cm standing water film.`);
+      
+      // Growth Stage Agronomic Timing guardrail for cereals/paddy:
+      if (isFloweringStage) {
+        englishLines.push(`Agronomic Timing Warning: In paddy, NEVER top-dress Nitrogen at flowering as it induces blast disease susceptibility and floret sterility; N top-dressing is restricted to active tillering and panicle initiation.`);
+      } else if (nDose && nDose.dose_kg > 0) {
+        englishLines.push(`Fertilizer Dosage: Apply ${commUreaKg} kg of commercial Urea per acre (equivalent to ${nDoseKg} kg pure N) in two split-doses during tillering.`);
       }
-      tamilLines.push(`தஞ்சாவூர் டெல்டா நெல் பயிருக்கு ${targetStage || 'தூர்கட்டும்'} பருவத்தில் போதுமான நீர் தேவை.`);
-      tamilLines.push(`${areaAcres} ஏக்கருக்கு ${litres.toLocaleString()} லிட்டர் நீர் வழங்கி 2-3 செமீ நின்ற நீர் அளவை பராமரிக்கவும்.`);
+      tamilLines.push(`தஞ்சாவூர் டெல்டா நெல் பயிருக்கு மண் ஈரப்பதம் ${latestMoisture}% ஆக உள்ளது. மழை வாய்ப்பு குறைவு (${maxRainProb48h}%).`);
+      tamilLines.push(`${areaAcres} ஏக்கருக்கு ${litres.toLocaleString()} லிட்டர் (${pumpHours} மணி நேரம் பம்ப் பாசனம்) நீர் பாய்ச்சவும்.`);
     }
     // 5. IRRIGATION & WATER STRESS (Default for standard field queries)
     else {
       const mm = waterDose?.irrigation_mm ?? 25;
       const litres = waterDose?.litres ?? 101172;
+      const pumpHours = waterDose?.pump_hours_5hp ?? 10.1;
+      const nDoseKg = nDose?.dose_kg ?? 24.28;
+      const commUreaKg = nDose?.commercial_kg ?? Math.round((nDoseKg / 0.46) * 10) / 10;
+      const latestTemp = Number(soilData.latest?.temperature || 32);
 
       if (maxRainProb48h >= 60) {
         urgency = 'YELLOW';
-        englishLines.push(`Rain probability is ${maxRainProb48h}% in next 48 hours for Tiruchirappalli.`);
-        englishLines.push(`Withhold surface irrigation and chemical fertigation to avoid waterlogging and fertilizer leaching.`);
-        tamilLines.push(`அடுத்த 48 மணி நேரத்தில் ${maxRainProb48h}% மழை வாய்ப்புள்ளது.`);
-        tamilLines.push(`நீர்ப்பாசனத்தை தற்காலிகமாக நிறுத்தி வைக்கவும்.`);
+        englishLines.push(`Field Assessment (${targetCrop}): Moisture is ${latestMoisture}%.`);
+        englishLines.push(`Weather Risk: High rain probability (${maxRainProb48h}% in next 48h with ${(rainMms[0] + rainMms[1]).toFixed(1)} mm rainfall).`);
+        englishLines.push(`Actionable Prescription: Withhold surface irrigation and chemical fertigation to avoid waterlogging and fertilizer leaching.`);
+        tamilLines.push(`அடுத்த 48 மணி நேரத்தில் ${maxRainProb48h}% கனமழை வாய்ப்புள்ளது. நீர்ப்பாசனத்தை தற்காலிகமாக நிறுத்தி வைக்கவும்.`);
       } else if (latestMoisture < idealMoisture - 10) {
         urgency = 'RED';
-        englishLines.push(`Soil moisture has dropped to ${latestMoisture}% against the optimal ${idealMoisture}% requirement for ${targetCrop} at ${targetStage} stage.`);
-        englishLines.push(`Moisture trend is ${moistureStatus} (slope ${trendData.slope_per_reading}/reading). Irrigate immediately with ${mm} mm (${litres.toLocaleString()} litres for ${areaAcres} acre) to prevent flower abortion and blossom-end rot.`);
-        if (nDose && nDose.dose_kg > 0) {
-          englishLines.push(`Follow with ${nDose.dose_kg} kg Nitrogen fertilizer once moisture is replenished.`);
+        englishLines.push(`Field Assessment (${targetCrop}): Soil moisture is at ${latestMoisture}% (below the ${idealMoisture}% optimal threshold for ${targetStage || 'flowering'} stage, trend: ${moistureStatus} at slope ${trendData.slope_per_reading}/reading).`);
+        
+        // Root-zone heat stress guardrail:
+        if (latestTemp >= 30 && moistureStatus === 'falling') {
+          englishLines.push(`Thermal Root Stress: Root-zone temperature is elevated at ${latestTemp}°C with declining moisture; immediate irrigation is critical to mitigate thermal root stress and prevent xylem cavitation.`);
         }
-        tamilLines.push(`மண் ஈரப்பதம் ${latestMoisture}% ஆக குறைந்துள்ளது (இடர் நிலை: சிவப்பு).`);
-        tamilLines.push(`${areaAcres} ஏக்கருக்கு ${mm} மிமீ (${litres.toLocaleString()} லிட்டர்) நீர்ப்பாசனம் உடனடியாக செய்யவும். 24.28 கிலோ தழைச்சத்து உரம் இடவும்.`);
+        
+        englishLines.push(`Weather Risk: A light rainfall probability (${maxRainProb48h}%) is forecasted over the next 72 hours with negligible accumulation (<2 mm). Do not delay operations, as anticipated rainfall is insufficient to recover soil moisture.`);
+        englishLines.push(`Actionable Prescriptions: Apply ${litres.toLocaleString()} Liters of water per acre (${mm} mm depth, or run standard 5 HP borewell irrigation for approximately ${pumpHours} hours) to restore root-zone moisture to ${idealMoisture}%.`);
+        if (nDose && nDose.dose_kg > 0) {
+          englishLines.push(`Fertilizer Dosage: Apply ${commUreaKg} kg of commercial Urea per acre (equivalent to ${nDoseKg} kg pure N) following irrigation to prevent root scorch and ammonia volatilization.`);
+        }
+        tamilLines.push(`மண் ஈரப்பதம் ${latestMoisture}% ஆக குறைந்துள்ளது (இடர் நிலை: சிவப்பு). வெப்ப தணிப்பு மற்றும் பாசனத்திற்காக 1 ஏக்கருக்கு ${litres.toLocaleString()} லிட்டர் (${pumpHours} மணி நேரம் பம்ப் பாசனம்) நீர் பாய்ச்சவும். தொடர்ந்து ${commUreaKg} கிலோ வணிக யூரியா (${nDoseKg} கிலோ தூய N) இடவும்.`);
       } else {
         urgency = 'GREEN';
-        englishLines.push(`Soil moisture is at a healthy ${latestMoisture}% (ideal ${idealMoisture}%) with a ${moistureStatus} trend.`);
-        englishLines.push(`No immediate irrigation needed today. Re-evaluate sensor telemetry in 48 hours.`);
-        tamilLines.push(`மண் ஈரப்பதம் ${latestMoisture}% அளவில் உகந்ததாக உள்ளது.`);
-        tamilLines.push(`இன்று கூடுதல் நீர்ப்பாசனம் தேவையில்லை.`);
+        englishLines.push(`Field Assessment (${targetCrop}): Soil moisture is stable at ${latestMoisture}% (target ${idealMoisture}%). Weather risk is low (${maxRainProb48h}%).`);
+        englishLines.push(`Actionable Prescription: No supplemental irrigation needed today. Re-evaluate sensor telemetry in 48 hours.`);
+        tamilLines.push(`மண் ஈரப்பதம் ${latestMoisture}% அளவில் உகந்ததாக உள்ளது. இன்று கூடுதல் நீர்ப்பாசனம் தேவையில்லை.`);
       }
     }
 

@@ -36,6 +36,8 @@ export interface DosageNutrientDetail {
   ideal: number;
   deficit: number;
   dose_kg: number;
+  commercial_fertilizer?: string;
+  commercial_kg?: number;
 }
 
 export interface DosageWaterDetail {
@@ -43,6 +45,7 @@ export interface DosageWaterDetail {
   ideal_pct: number;
   irrigation_mm: number;
   litres: number;
+  pump_hours_5hp?: number;
 }
 
 export interface DosageResult {

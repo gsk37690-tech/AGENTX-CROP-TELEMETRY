@@ -274,11 +274,26 @@ class CalculateDosage(Tool):
                         deficit = max(ideal_n - latest_n, 0.0)
                         kg = deficit / ACRES_PER_HECTARE * area
                         capped = min(kg, MAX_NUTRIENT_KG_PER_ACRE * area)
+                        
+                        comm_fert = "Direct Nutrient Source"
+                        comm_kg = round(capped, 2)
+                        if n == "N":
+                            comm_fert = "Commercial Urea (46% N)"
+                            comm_kg = round(capped / 0.46, 1)
+                        elif n == "P":
+                            comm_fert = "Single Super Phosphate (16% P2O5)"
+                            comm_kg = round(capped / 0.16, 1)
+                        elif n == "K":
+                            comm_fert = "Muriate of Potash (60% K2O)"
+                            comm_kg = round(capped / 0.60, 1)
+
                         out[n] = {
                             "current": round(latest_n, 2),
                             "ideal": ideal_n,
                             "deficit": round(deficit, 2),
-                            "dose_kg": round(capped, 2)
+                            "dose_kg": round(capped, 2),
+                            "commercial_fertilizer": comm_fert,
+                            "commercial_kg": comm_kg
                         }
                         if capped < kg:
                             notes.append(f"{n} dose capped at {MAX_NUTRIENT_KG_PER_ACRE} kg/acre")
@@ -291,11 +306,14 @@ class CalculateDosage(Tool):
                     ideal_m = float(ideal["moisture"])
                     deficit = max(ideal_m - latest_m, 0.0)
                     mm = min(deficit / 100.0 * ROOT_ZONE_MM, MAX_WATER_MM)
+                    litres = round(mm * LITRES_PER_MM_PER_ACRE * area)
+                    pump_hours = round(litres / 10000.0, 1)
                     out["water"] = {
                         "current_pct": round(latest_m, 2),
                         "ideal_pct": ideal_m,
                         "irrigation_mm": round(mm, 1),
-                        "litres": round(mm * LITRES_PER_MM_PER_ACRE * area)
+                        "litres": litres,
+                        "pump_hours_5hp": pump_hours
                     }
                 except (ValueError, TypeError):
                     pass

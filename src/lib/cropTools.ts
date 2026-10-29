@@ -257,11 +257,26 @@ export class CropTools {
           const kg = (deficit / ACRES_PER_HECTARE) * area;
           const capped = Math.min(kg, MAX_NUTRIENT_KG_PER_ACRE * area);
 
+          let commFert = 'Direct Nutrient Source';
+          let commKg = Math.round(capped * 100) / 100;
+          if (n === 'N') {
+            commFert = 'Commercial Urea (46% N)';
+            commKg = Math.round((capped / 0.46) * 10) / 10;
+          } else if (n === 'P') {
+            commFert = 'Single Super Phosphate (16% P2O5)';
+            commKg = Math.round((capped / 0.16) * 10) / 10;
+          } else if (n === 'K') {
+            commFert = 'Muriate of Potash (60% K2O)';
+            commKg = Math.round((capped / 0.60) * 10) / 10;
+          }
+
           out[n] = {
             current: Math.round(currentVal * 100) / 100,
             ideal: idealVal,
             deficit: Math.round(deficit * 100) / 100,
-            dose_kg: Math.round(capped * 100) / 100
+            dose_kg: Math.round(capped * 100) / 100,
+            commercial_fertilizer: commFert,
+            commercial_kg: commKg
           };
 
           if (capped < kg) {
@@ -276,12 +291,14 @@ export class CropTools {
         const deficit = Math.max(idealM - currentM, 0.0);
         const mm = Math.min((deficit / 100.0) * ROOT_ZONE_MM, MAX_WATER_MM);
         const litres = Math.round(mm * LITRES_PER_MM_PER_ACRE * area);
+        const pumpHours = Math.round((litres / 10000) * 10) / 10; // 5 HP borewell @ ~10,000 L/hr
 
         out.water = {
           current_pct: Math.round(currentM * 100) / 100,
           ideal_pct: idealM,
           irrigation_mm: Math.round(mm * 10) / 10,
-          litres
+          litres,
+          pump_hours_5hp: pumpHours
         };
       }
 

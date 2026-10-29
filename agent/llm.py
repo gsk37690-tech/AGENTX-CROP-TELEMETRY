@@ -157,44 +157,46 @@ class LLM:
                 final_answer = (
                     "URGENCY: YELLOW\n"
                     "ADVICE: For tomato at flowering stage, current soil NPK is 40-20-30 kg/ha against ideal 100-50-60 kg/ha. "
-                    "Apply 24.28 kg Nitrogen, 12.14 kg Phosphorus, and 12.14 kg Potassium per acre. "
-                    "Apply in split doses via fertigation to prevent nutrient loss.\n"
-                    "ஆலோசனை: தக்காளி பூக்கும் பருவத்திற்கு ஒரு ஏக்கருக்கு 24.28 கிலோ தழைச்சத்து, 12.14 கிலோ மணிச்சத்து, "
-                    "12.14 கிலோ சாம்பல் சத்து உரம் இடவும்.\n"
+                    "Apply 52.8 kg of commercial Urea per acre (equivalent to 24.28 kg pure N) along with 75.9 kg SSP and 20.2 kg MOP. "
+                    "Irrigate with ~25,000 L/acre immediately following application to prevent ammonia volatilization.\n"
+                    "ஆலோசனை: 1 ஏக்கருக்கு 52.8 கிலோ வணிக யூரியா (24.28 கிலோ தூய தழைச்சத்திற்கு சமம்), 75.9 கிலோ SSP மற்றும் 20.2 கிலோ MOP இடவும். "
+                    "அம்மோனியா ஆவியாவதைத் தடுக்க உடனே லேசான நீர்ப்பாசனம் செய்யவும்.\n"
                     "Estimate only. Confirm with a local agriculture officer."
                 )
             elif any(k in q_lower for k in ["weather", "rain", "precipitation", "forecast", "monsoon"]):
                 final_answer = (
                     "URGENCY: GREEN\n"
-                    "ADVICE: 3-day meteorological forecast for Tiruchirappalli indicates low rain probability (20% on Day 1, 15% on Day 2). "
-                    "Conditions are favorable for scheduled fertigation and farm field operations.\n"
-                    "ஆலோசனை: அடுத்த 3 நாட்களுக்கு மழை வாய்ப்பு குறைவு (20%). திட்டமிட்ட பாசனம் மற்றும் உரமிடுதல் பணிகளை தொடரலாம்.\n"
+                    "ADVICE: Weather Risk: A light rainfall probability (20%) is forecasted over the next 72 hours with negligible accumulation (<2 mm). "
+                    "Do not delay operations, as anticipated rainfall is insufficient to recover soil moisture. Proceed with scheduled irrigation and fertigation.\n"
+                    "ஆலோசனை: அடுத்த 72 மணி நேரத்தில் மழை வாய்ப்பு குறைவு (20%, <2 மிமீ). இயற்கை மழையை நம்பாமல் திட்டமிட்ட பாசனம் மற்றும் உரமிடுதலை தடையின்றி தொடரவும்.\n"
                     "Estimate only. Confirm with a local agriculture officer."
                 )
             elif any(k in q_lower for k in ["ph", "acid", "alkaline", "lime"]):
                 final_answer = (
                     "URGENCY: GREEN\n"
-                    "ADVICE: Soil pH is 6.2 (slightly acidic), which is within the optimal 6.0 to 6.8 range for tomato crops. "
-                    "Major soil nutrients are readily available for root absorption. No chemical liming is needed.\n"
+                    "ADVICE: Field Assessment: Root-zone soil pH is 6.2 (slightly acidic), within the optimal 6.0 to 6.8 range for tomato crops. "
+                    "Major soil nutrients are readily available for root absorption. No chemical liming is needed at this time.\n"
                     "ஆலோசனை: மண் கார அமிலத்தன்மை (pH) 6.2 ஆக உகந்த அளவில் உள்ளது. சுண்ணாம்பு இட வேண்டிய அவசியம் இல்லை.\n"
                     "Estimate only. Confirm with a local agriculture officer."
                 )
             elif any(k in q_lower for k in ["rice", "paddy", "thanjavur"]):
                 final_answer = (
                     "URGENCY: RED\n"
-                    "ADVICE: For rice paddy, current soil moisture is 22%, well below the required 75-85% saturation. "
-                    "Irrigate immediately with 25 mm depth (101,171 litres/acre) to restore standing water and prevent tillering failure.\n"
-                    "ஆலோசனை: நெல் பயிருக்கு மண் ஈரப்பதம் மிகவும் குறைவாக உள்ளது. உடனடியாக பாசனம் செய்து நீர் மட்டத்தை உயர்த்தவும்.\n"
+                    "ADVICE: Field Assessment (Paddy Rice): Current soil moisture is 22%, below the 75-85% saturation threshold. "
+                    "Rainfall risk is low (20%), so do not delay operations. "
+                    "Apply 80,937 Liters of water per acre (20 mm depth, or run 5 HP pump for ~8 hours) to restore standing water film. "
+                    "Apply 65 kg of commercial Urea per acre (equivalent to 30 kg pure N).\n"
+                    "ஆலோசனை: நெல் பயிருக்கு மண் ஈரப்பதம் 22% ஆக குறைந்துள்ளது. மழை வாய்ப்பு குறைவாக உள்ளதால் உடனே 80,937 லிட்டர் நீர் பாய்ச்சவும். 65 கிலோ வணிக யூரியா இடவும்.\n"
                     "Estimate only. Confirm with a local agriculture officer."
                 )
             else:
                 final_answer = (
                     "URGENCY: RED\n"
-                    "ADVICE: Soil moisture has dropped to 22% with a falling trend (slope -1.214/reading). "
-                    "Irrigate immediately with 25.0 mm (101,171 litres for 1.0 acre) during flowering stage. "
-                    "Apply 24.28 kg Nitrogen fertilizer to relieve nutrient deficit.\n"
-                    "ஆலோசனை: மண் ஈரப்பதம் 22% ஆக குறைந்துள்ளது (இடர் நிலை: சிவப்பு). ஒரு ஏக்கருக்கு 25 மிமீ (101,171 லிட்டர்) "
-                    "நீர்ப்பாசனம் உடனடியாக செய்யவும். 24.28 கிலோ தழைச்சத்து உரம் இடவும்.\n"
+                    "ADVICE: Field Assessment (Tomato): Soil moisture has dropped to 22% with a falling trend (slope -1.214/reading). "
+                    "Weather Risk: Rainfall likelihood is low (20%, <2 mm); do not rely on natural precipitation. "
+                    "Actionable Prescriptions: Apply 101,172 Liters of water per acre (25 mm depth, or run standard 5 HP borewell for ~10.1 hours) to restore moisture. "
+                    "Follow with 52.8 kg of commercial Urea per acre (equivalent to 24.28 kg pure N).\n"
+                    "ஆலோசனை: மண் ஈரப்பதம் 22% ஆக குறைந்துள்ளது (இடர் நிலை: சிவப்பு). மழை வாய்ப்பு குறைவாக உள்ளதால் (20%), இயற்கை மழையை நம்பாமல் 101,172 லிட்டர் நீர்ப்பாசனம் உடனடியாக செய்யவும். 52.8 கிலோ வணிக யூரியா (24.28 கிலோ தூய N) இடவும்.\n"
                     "Estimate only. Confirm with a local agriculture officer."
                 )
 

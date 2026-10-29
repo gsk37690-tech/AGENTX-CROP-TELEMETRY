@@ -48,52 +48,21 @@ export const AgentConsole: React.FC<AgentConsoleProps> = ({
   const [expandedTraces, setExpandedTraces] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Maintain conversational chat history
+  // Maintain conversational chat history with a fresh welcome greeting
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const initialAnswer = lastResponse
-      ? lastResponse.answer
-      : `URGENCY: RED
-ADVICE: Soil moisture has dropped to 22% with a falling trend (slope -1.21/reading). Irrigate immediately with 25.0 mm (101,172 litres for 1.0 acre) to relieve water stress during flowering stage. Apply 24.28 kg Nitrogen fertilizer to relieve nutrient deficit.
-ஆலோசனை: மண் ஈரப்பதம் 22% ஆக குறைந்துள்ளது (இடர் நிலை: சிவப்பு). ஒரு ஏக்கருக்கு 25 மிமீ (101,172 லிட்டர்) நீர்ப்பாசனம் உடனடியாக செய்யவும். 24.28 கிலோ தழைச்சத்து உரம் இடவும்.
+    const welcomeAnswer = `URGENCY: GREEN
+ADVICE: Vanakkam! I am Uzhavan AgriAgent, your autonomous crop telemetry and weather advisor for Tamil Nadu. Ask me any question about your soil moisture, irrigation timing, fertilizer dosage, or 48-hour rain risk.
+ஆலோசனை: வணக்கம்! நான் உங்கள் உழவன் பயிர் ஆலோசகர். மண் ஈரப்பதம், பாசனத் தேவை, உர அளவு அல்லது மழை வாய்ப்பு குறித்த கேள்விகளை என்னிடம் கேட்கலாம்.
 Estimate only. Confirm with a local agriculture officer.`;
 
-    const initialParsed = parseAdvice(initialAnswer);
+    const welcomeParsed = parseAdvice(welcomeAnswer);
     return [
       {
-        id: 'msg-init-user',
-        sender: 'user',
-        text: 'Should I irrigate my 1 acre tomato field today?',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      },
-      {
-        id: 'msg-init-agent',
+        id: 'msg-welcome',
         sender: 'agent',
-        text: initialAnswer,
+        text: welcomeAnswer,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        response: lastResponse || {
-          answer: initialAnswer,
-          trace: [
-            {
-              thought: 'Check recent soil telemetry readings to inspect current moisture, NPK, and pH levels.',
-              tool: 'get_soil_readings',
-              args: { days: 7 },
-              observation: '{"rows": 7, "latest": {"moisture": 22.0, "N": 40.0, "P": 20.0, "K": 30.0, "pH": 6.2}}'
-            },
-            {
-              thought: 'Analyze moisture trend to see if soil moisture is falling, rising, or stable.',
-              tool: 'analyze_trend',
-              args: { column: 'moisture', days: 7 },
-              observation: '{"column": "moisture", "status": "falling", "slope_per_reading": -1.21}'
-            },
-            {
-              thought: 'Calculate fertilizer NPK and irrigation water dosage needed for 1 acre.',
-              tool: 'calculate_dosage',
-              args: { crop: 'tomato', area_acres: 1.0, stage: 'flowering' },
-              observation: '{"dosage": {"water_mm": 25.0, "litres": 101172, "N_kg": 24.28}}'
-            }
-          ]
-        },
-        parsedAdvice: initialParsed
+        parsedAdvice: welcomeParsed
       }
     ];
   });
@@ -176,12 +145,8 @@ Estimate only. Confirm with a local agriculture officer.`;
           </div>
         );
       default:
-        return (
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F5E9] border border-[#C8E6C9] text-[#1B5E20] font-bold text-xs tracking-wide">
-            <span className="w-2 h-2 rounded-full bg-[#2E7D32]"></span>
-            URGENCY: GREEN — Optimal Condition
-          </div>
-        );
+        // Do not display urgency badge for general messages, greetings, or optimal/GREEN status
+        return null;
     }
   };
 
